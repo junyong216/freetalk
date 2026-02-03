@@ -7,6 +7,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.use(express.static(__dirname));
+
 const db = new sqlite3.Database('./chat_v2.db');
 
 const allRooms = new Set(["자유 대화방", "정보 공유방", "비밀 대화방"]);
@@ -23,7 +25,7 @@ db.serialize(() => {
         read_count INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
-    db.run(`ALTER TABLE messages ADD COLUMN read_count INTEGER DEFAULT 0`, (err) => {});
+    db.run(`ALTER TABLE messages ADD COLUMN read_count INTEGER DEFAULT 0`, (err) => { });
 });
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
