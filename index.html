@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>프리톡 (Free Talk)</title>
+    <style>
+        /* 형님이 주신 기본 스타일 유지 */
+        body {
+            font-family: 'Pretendard', sans-serif;
+            margin: 0;
+            background-color: #f0f2f5;
+            overflow: hidden;
+        }
+
+        #list-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .room-container {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 380px;
+            text-align: center;
+        }
+
+        #room-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 20px 0;
+            border-top: 1px solid #eee;
+        }
+
+        .room-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #6e8efb;
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        #chat-area {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* 공지사항 바 스타일 수정 */
+        #notice-bar {
+            background: #ffffff;
+            border-left: 5px solid #a29bfe;
+            margin-bottom: 10px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            font-size: 0.9rem;
+            z-index: 10;
+        }
+
+        /* 공지 텍스트 영역 (클릭 시 전체보기) */
+        #notice-content-area {
+            flex: 1;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* [추가] 닫기 버튼 스타일 */
+        .close-notice {
+            margin-left: 10px;
+            cursor: pointer;
+            color: #ccc;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 0 5px;
+            transition: 0.2s;
+        }
+
+        .close-notice:hover {
+            color: #ff4d4d;
+        }
+
+        #notice-bar b {
+            color: #6c5ce7;
+            margin-right: 10px;
+        }
+
+        /* 메시지 영역: 푸터와 겹치지 않게 여백 조정 */
+        #messages {
+            list-style: none;
+            padding: 0;
+            flex-grow: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 110px !important;
+        }
+
+        #messages li {
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 75%;
+            word-wrap: break-word;
+            font-size: 0.95rem;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 내 채팅창: 보라색 / 숫자: 파란색 / 시간: 화이트 */
+        .my-msg {
+            align-self: flex-end;
+            background-color: #a29bfe !important;
+            color: white;
+            border-bottom-right-radius: 2px;
+            align-items: flex-end;
+        }
+
+        .other-msg {
+            align-self: flex-start;
+            background-color: #fff;
+            color: #333;
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .read-unread {
+            color: #0984e3 !important;
+            font-size: 0.75rem;
+            font-weight: bold;
+            position: absolute;
+            left: -25px;
+            bottom: 5px;
+        }
+
+        .my-msg .time {
+            font-size: 0.65rem;
+            color: #ffffff !important;
+            opacity: 0.9;
+        }
+
+        .other-msg .time {
+            font-size: 0.65rem;
+            color: #999;
+        }
+
+        /* 입력창 위치 조정 */
+        #form {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            position: fixed;
+            bottom: 50px !important;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 450px;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        #input {
+            flex-grow: 1;
+            border: none;
+            outline: none;
+        }
+
+        /* [추가] 하단 푸터바 (대표님 명함) */
+        #footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #ffffff;
+            border-top: 1px solid #ddd;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #444;
+            z-index: 1000;
+        }
+
+        #footer-bar strong {
+            color: #6c5ce7;
+        }
+
+        .email-link {
+            color: #0984e3;
+            text-decoration: none;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        #context-menu {
+            display: none;
+            position: fixed;
+            width: 150px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+        }
+
+        #context-menu div {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+            color: #333;
+        }
+
+        /* 파일 메시지 스타일 */
+        .file-msg {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            text-decoration: none;
+            color: inherit;
+            cursor: pointer;
+        }
+
+        .other-msg .file-msg {
+            background: #f1f2f6;
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+        }
+
+        .file-info {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.85rem;
+        }
+
+        .file-name {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        /* 이미지 확대 모달 스타일 */
+        #image-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            /* 모든 것보다 위에 */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            cursor: zoom-out;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #modal-img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="list-area">
+        <div class="room-container">
+            <h2 style="color: #6e8efb;">💬 프리톡</h2>
+            <div id="room-list"></div>
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <input id="new-room-input" style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;"
+                    placeholder="방 이름..." />
+                <button onclick="createNewRoom()"
+                    style="padding:10px 20px; background:#a777e3; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">생성</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat-area">
+        <div
+            style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:white; margin-bottom:5px; border-radius:12px;">
+            <div id="room-title" style="font-weight:bold;"></div>
+            <button onclick="leaveChat()"
+                style="background:#ff4d4d; color:white; border:none; padding:5px 15px; border-radius:8px; cursor:pointer;">나가기</button>
+        </div>
+
+        <div id="notice-bar">
+            <div id="notice-content-area" onclick="showFullNotice()">
+                <b>📢 공지</b> <span id="notice-content"></span>
+            </div>
+            <span class="close-notice" onclick="closeNotice()">×</span>
+        </div>
+
+        <ul id="messages"></ul>
+
+        <form id="form">
+            <input type="file" id="file-input" style="display:none;" onchange="uploadFile(this)" accept="*">
+            <button type="button" style="background:none; border:none; font-size:1.2rem; cursor:pointer;"
+                onclick="document.getElementById('file-input').click()">📎</button>
+            <input id="input" autocomplete="off" placeholder="메시지나 파일을 보내세요..." />
+            <button type="submit" ...>전송</button>
+        </form>
+    </div>
+
+    <div id="footer-bar">
+        문의 <strong>제이투코어(J2CORE)</strong> 대표 <strong>정준용</strong>
+        <a href="mailto:jjyong3872@naver.com" class="email-link">📩 jjyong3872@naver.com</a>
+    </div>
+
+    <div id="context-menu">
+        <div onclick="setAsNotice()">📌 공지 등록</div>
+        <div onclick="handleReply()">↩️ 답장</div>
+        <div onclick="handleLike()">❤️ 공감</div>
+        <div onclick="handleShare()">📤 공유</div>
+        <div onclick="handleDelete()" style="color:red;">🗑️ 삭제</div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let userName = '', currentRoom = '', selectedId = null, selectedSender = '', selectedText = '';
+
+        // 공지 등록 기능
+        function setAsNotice() {
+            if (!selectedText) return;
+            document.getElementById('notice-content').innerText = selectedText;
+            document.getElementById('notice-bar').style.display = 'flex';
+        }
+        function showFullNotice() { alert("📢 공지 내용:\n\n" + document.getElementById('notice-content').innerText); }
+
+        // 공지사항 닫기 기능
+        function closeNotice() {
+            document.getElementById('notice-bar').style.display = 'none';
+        }
+
+        // 공지 등록 시 다시 보이게 처리 (기존 함수 수정)
+        function setAsNotice() {
+            if (!selectedText) return;
+            document.getElementById('notice-content').innerText = selectedText;
+            document.getElementById('notice-bar').style.display = 'flex'; // 등록 시 다시 나타남
+        }
+
+        function addMessage(data) {
+            if (!data || !data.id) return;
+            const list = document.getElementById('messages');
+            const item = document.createElement('li');
+            item.id = `msg-${data.id}`;
+
+            let content = '';
+            if (data.type === 'image') {
+                content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; cursor:pointer;" 
+                    onclick="openImageViewer(this.src)">`;
+            } else if (data.type === 'file') {
+                // [수정] 고정값 '첨부파일' 삭제 -> data.fileName(원본 이름)을 그대로 사용
+                const fileName = data.fileName || '이름 없는 파일';
+                content = `
+            <a href="${data.text}" download="${fileName}" class="file-msg">
+                <span class="file-icon">📁</span>
+                <div class="file-info">
+                    <span class="file-name">${fileName}</span>
+                    <span style="font-size:0.7rem; opacity:0.8;">클릭하여 다운로드</span>
+                </div>
+            </a>`;
+            } else {
+                content = data.text;
+            }
+
+            // 시간 및 읽음 표시 로직 (기존과 동일)
+            const timeHtml = `<span class="time">${data.time || ''}</span>`;
+            const readHtml = data.read_count > 0 ? `<span class="read-unread">${data.read_count}</span>` : '';
+
+            if (data.name === userName) {
+                item.className = 'my-msg';
+                item.innerHTML = `${readHtml}${content}<div class="msg-info">${timeHtml}</div>`;
+            } else {
+                item.className = 'other-msg';
+                item.innerHTML = `<strong>${data.name}</strong>${content}<div class="msg-info">${timeHtml}${readHtml}</div>`;
+            }
+
+            item.oncontextmenu = (e) => {
+                e.preventDefault();
+                selectedId = data.id; selectedSender = data.name; selectedText = data.text;
+                const menu = document.getElementById('context-menu');
+                menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+            };
+            list.appendChild(item);
+            list.scrollTop = list.scrollHeight;
+        }
+
+        function openImageViewer(src) {
+            const modal = document.getElementById('image-modal');
+            const modalImg = document.getElementById('modal-img');
+            modal.style.display = 'flex';
+            modalImg.src = src;
+        }
+
+        // --- 이하 소켓 로직 (형님 원본과 동일) ---
+        socket.on('load messages', (messages) => {
+            document.getElementById('list-area').style.display = 'none';
+            document.getElementById('chat-area').style.display = 'flex';
+            document.getElementById('room-title').textContent = currentRoom;
+            document.getElementById('messages').innerHTML = '';
+            if (messages) messages.forEach(addMessage);
+            socket.emit('mark as read');
+        });
+
+        socket.on('chat message', (data) => {
+            addMessage(data);
+            if (data.name !== userName) socket.emit('mark as read');
+        });
+
+        socket.on('all read', () => {
+            document.querySelectorAll('.read-unread').forEach(el => el.style.display = 'none');
+        });
+
+        document.getElementById('form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('input');
+            if (input.value.trim()) {
+                socket.emit('chat message', { room: currentRoom, name: userName, text: input.value });
+                input.value = '';
+            }
+        });
+
+        function handleShare() { navigator.clipboard.writeText(selectedText).then(() => alert("복사 완료!")); }
+        function handleLike() { socket.emit('like message', selectedId); }
+        function handleReply() { document.getElementById('input').value = `[${selectedSender}님께 답장]: `; document.getElementById('input').focus(); }
+        function handleDelete() { if (confirm("삭제할까요?")) socket.emit('delete message', selectedId); }
+        socket.on('message deleted', (id) => { document.getElementById(`msg-${id}`)?.remove(); });
+
+        function enterRoom(roomName) {
+            const nick = prompt("닉네임:");
+            if (!nick) return;
+            userName = nick; currentRoom = roomName;
+            socket.emit('join room', { room: roomName, name: nick });
+        }
+
+        socket.on('room counts', (data) => {
+            const list = document.getElementById('room-list');
+            list.innerHTML = '';
+            for (const room in data.roomCounts) {
+                const item = document.createElement('div');
+                item.className = 'room-item';
+                item.onclick = () => enterRoom(room);
+                item.innerHTML = `<span>${room}</span><span>${data.roomCounts[room]}명</span>`;
+                list.appendChild(item);
+            }
+        });
+
+        function leaveChat() { location.reload(); }
+        window.onclick = () => document.getElementById('context-menu').style.display = 'none';
+        function uploadFile(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    const isImage = file.type.startsWith('image/');
+                    socket.emit('chat message', {
+                        room: currentRoom,
+                        name: userName,
+                        text: e.target.result,
+                        type: isImage ? 'image' : 'file',
+                        fileName: file.name // [핵심] 여기서 원본 파일 이름을 추출해서 보냅니다
+                    });
+                };
+                reader.readAsDataURL(file);
+                input.value = '';
+            }
+        }
+    </script>
+
+    <div id="image-modal" onclick="this.style.display='none'">
+        <img id="modal-img">
+    </div>
+</body>
+
+</html>
