@@ -290,10 +290,11 @@
 </head>
 
 <body>
-    <div id="install-btn"
+    <div id="main-install-btn"
         style="position: absolute; top: 20px; right: 60px; font-size: 1.5rem; cursor: pointer; display: none; z-index: 1001;"
         onclick="installApp()">📲</div>
-    <div style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; z-index: 1001;"
+    <div id="main-settings-btn"
+        style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; z-index: 1001;"
         onclick="toggleSettings()">⚙️</div>
 
     <div id="settings-modal"
@@ -442,6 +443,11 @@
         socket.on('load messages', (messages) => {
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
+
+            // ✅ 채팅방 들어올 때 메인 아이콘 두 개를 완전히 숨김
+            document.getElementById('main-install-btn').style.display = 'none';
+            document.getElementById('main-settings-btn').style.display = 'none';
+
             document.getElementById('room-title').textContent = currentRoom;
             document.getElementById('messages').innerHTML = '';
             if (messages) messages.forEach(addMessage);
