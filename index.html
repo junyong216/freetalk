@@ -236,9 +236,6 @@
 </head>
 
 <body ondragover="event.preventDefault()" ondrop="handleDrop(event)">
-    <div id="main-install-btn"
-        style="position: absolute; top: 20px; right: 60px; font-size: 1.5rem; cursor: pointer; display: none; z-index: 1001;"
-        onclick="installApp()">📲</div>
     <div id="main-settings-btn"
         style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; z-index: 1001;"
         onclick="toggleSettings()">⚙️</div>
@@ -262,11 +259,10 @@
                 <div id="room-title" style="font-weight:bold;"></div>
             </div>
             <button onclick="leaveChat()"
-                style="background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:8px;">완전
-                퇴장</button>
+                style="background:#ff4d4d; color:white; border:none; padding:5px 10px; border-radius:8px;">퇴장</button>
         </div>
         <ul id="messages"></ul>
-        <form id="form">
+        <form id="form" onsubmit="sendMessage(event)">
             <input type="file" id="file-input" style="display:none;" onchange="uploadFile(this)">
             <button type="button" style="background:none; border:none; font-size:1.2rem; cursor:pointer;"
                 onclick="document.getElementById('file-input').click()">📎</button>
@@ -284,30 +280,20 @@
 
     <div id="image-modal" onclick="this.style.display='none'"><img id="modal-img"
             style="max-width:90%; max-height:90%;"></div>
-    <div id="settings-modal"
-        style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; background:white; padding:20px; border-radius:20px; z-index:10001; box-shadow:0 10px 30px rgba(0,0,0,0.2);">
-        <h3>🛠️ 환경설정</h3>
-        <select id="theme-select" onchange="changeTheme()" style="width:100%; padding:10px; margin-bottom:10px;">
-            <option value="light">기본</option>
-            <option value="dark">다크</option>
-        </select>
-        <button onclick="toggleSettings()" style="width:100%; padding:10px;">닫기</button>
-    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         let userName = '', currentRoom = '';
 
-        // [서버와 데이터 구조 동기화]
+        // [수정: 수신 즉시 무조건 실행]
         socket.on('chat message', (data) => {
-            console.log("수신 데이터:", data); // 전송 확인용
+            console.log("메시지 받음:", data);
             addMessage(data);
         });
 
         socket.on('load messages', (messages) => {
-            const list = document.getElementById('messages');
-            list.innerHTML = '';
+            document.getElementById('messages').innerHTML = '';
             if (messages) messages.forEach(addMessage);
         });
 
@@ -324,50 +310,55 @@
         });
 
         function addMessage(data) {
-            if (!data || !data.text) return;
+            if (!data) return;
             const list = document.getElementById('messages');
             const item = document.createElement('li');
 
+            // 시스템 메시지 처리
             if (data.name === '시스템' || data.type === 'system') {
-                item.style.cssText = "align-self:center; background:rgba(0,0,0,0.05); color:#777; font-size:0.8rem; border-radius:10px; padding:5px 15px; margin: 5px 0;";
-                item.innerHTML = data.text;
-            } else {
-                const isMy = data.name === userName;
-                item.className = isMy ? 'my-msg' : 'other-msg';
-
-                // 이미지/텍스트 구분
-                let content = data.type === 'image' ? `<img src="${data.text}" style="max-width:200px; border-radius:10px;" onclick="openViewer('${data.text}')">` : data.text;
-
-                // 서버의 timeStr 또는 현재 시간
-                const timeStr = data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-                const readCnt = data.read_count !== undefined ? data.read_count : '';
-
-                const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column;">
-                    <span class="read-unread">${readCnt > 0 ? readCnt : ''}</span>
-                    <span class="time-text">${timeStr}</span>
-                </div>`;
-
-                item.innerHTML = isMy ? `${content}${info}` : `<strong>${data.name}</strong><br>${content}${info}`;
+                item.style.cssText = "align-self:center; background:rgba(0,0,0,0.05); color:#777; font-size:0.8rem; border-radius:10px; padding:5px 15px; margin:5px 0;";
+                item.textContent = data.text;
+                list.appendChild(item);
+                list.scrollTop = list.scrollHeight;
+                return;
             }
+
+            const isMy = data.name === userName;
+            item.className = isMy ? 'my-msg' : 'other-msg';
+
+            // 이미지 여부 확인
+            let content = data.type === 'image' ?
+                `<img src="${data.text}" style="max-width:200px; border-radius:10px;" onclick="openViewer('${data.text}')">` :
+                data.text;
+
+            // 시간 및 읽음 표시 (서버 필드명 일치)
+            const timeStr = data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            const readCnt = (data.read_count !== undefined && data.read_count > 0) ? data.read_count : '';
+
+            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column;">
+                <span class="read-unread" style="color:#ffeb33; font-size:0.7rem;">${readCnt}</span>
+                <span class="time-text" style="color:#999; font-size:0.6rem;">${timeStr}</span>
+            </div>`;
+
+            item.innerHTML = isMy ? `${content}${info}` : `<strong>${data.name}</strong><br>${content}${info}`;
             list.appendChild(item);
             list.scrollTop = list.scrollHeight;
         }
 
-        // 전송 이벤트 (서버의 socket.on('chat message') 구조에 맞춤)
-        document.getElementById('form').addEventListener('submit', (e) => {
+        function sendMessage(e) {
             e.preventDefault();
             const input = document.getElementById('input');
             if (input.value.trim() && currentRoom) {
-                const msgData = {
+                // 서버 socket.on('chat message')가 받는 인자 순서와 형식을 100% 맞춤
+                socket.emit('chat message', {
                     room: currentRoom,
                     name: userName,
                     text: input.value,
                     type: 'text'
-                };
-                socket.emit('chat message', msgData);
+                });
                 input.value = '';
             }
-        });
+        }
 
         function enterRoom(roomName) {
             if (!userName) { userName = prompt("닉네임:"); if (!userName) return; }
@@ -375,7 +366,6 @@
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
             document.getElementById('footer-bar').style.display = 'none';
-            document.getElementById('main-settings-btn').style.display = 'none';
             document.getElementById('room-title').textContent = roomName;
             socket.emit('join room', { room: roomName, name: userName });
         }
@@ -384,10 +374,8 @@
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
             document.getElementById('footer-bar').style.display = 'block';
-            document.getElementById('main-settings-btn').style.display = 'block';
         }
 
-        // 파일 전송 (Base64)
         function uploadFile(input) {
             const file = input.files[0];
             if (file && currentRoom) {
@@ -412,8 +400,6 @@
         }
 
         function createNewRoom() { const val = document.getElementById('new-room-input').value; if (val) enterRoom(val); }
-        function toggleSettings() { const s = document.getElementById('settings-modal'); s.style.display = s.style.display === 'none' ? 'block' : 'none'; }
-        function changeTheme() { document.body.classList.toggle('dark-mode', document.getElementById('theme-select').value === 'dark'); }
         function openViewer(src) { document.getElementById('image-modal').style.display = 'flex'; document.getElementById('modal-img').src = src; }
         function leaveChat() { if (confirm("방에서 완전히 나갈까요?")) { socket.emit('leave room'); location.reload(); } }
     </script>
