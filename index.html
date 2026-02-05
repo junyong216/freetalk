@@ -18,16 +18,12 @@
             font-family: 'Pretendard', sans-serif;
             margin: 0;
             background-color: #f0f2f5;
-
-            /* [수정] hidden을 제거하고 auto로 변경 */
-            overflow-y: auto;
-
-            /* [추가] 모바일에서 스크롤을 부드럽게 하고 탄성을 줍니다 */
-            -webkit-overflow-scrolling: touch;
-
+            /* [수정] 전체 화면 스크롤을 원천 차단해서 화면이 안 내려가게 합니다 */
+            overflow: hidden;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: 100vh;
+            /* 화면 높이 고정 */
         }
 
         #list-area {
@@ -35,10 +31,10 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-
-            /* [수정] 고정 높이 대신 최소 높이로 변경해서 내용이 많아지면 스크롤되게 합니다 */
-            min-height: 100vh;
-            padding: 20px 0;
+            /* [수정] 높이를 부모에 맞게 꽉 채웁니다 */
+            flex: 1;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         #list-area div[style*="display:flex"] {
@@ -58,26 +54,26 @@
         .room-container {
             background: white;
             padding: 25px;
-            /* 패딩을 살짝 줄여서 내부 공간을 확보합니다 */
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-
-            /* [수정] 아까 좋았던 너비로 고정하되, 화면보다 커지진 않게 설정 */
             width: 380px;
             max-width: 92%;
-            /* 폰 화면 양옆에 아주 살짝 여백을 줘서 둥근 모서리 살림 */
-
-            /* [핵심] 패딩이 너비에 포함되게 해서 밖으로 안 터지게 함 */
             box-sizing: border-box;
-
             text-align: center;
+            /* [추가] 박스가 화면보다 커지지 않게 제한 */
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
         }
 
         #room-list {
-            max-height: 300px;
+            /* [수정] 방이 많아지면 화이트 박스 밖으로 나가는 게 아니라 이 안에서만 스크롤됩니다 */
+            flex: 1;
             overflow-y: auto;
             margin: 20px 0;
             border-top: 1px solid #eee;
+            /* 모바일 스크롤 부드럽게 */
+            -webkit-overflow-scrolling: touch;
         }
 
         .room-item {
