@@ -45,25 +45,31 @@ function sendRoomCounts() {
 io.on('connection', (socket) => {
     sendRoomCounts();
 
+    // index.js (서버 파일)
+
     socket.on('join room', (data) => {
         if (roomPasswords[data.room] && roomPasswords[data.room] !== data.password) {
             return socket.emit('error message', '비밀번호가 일치하지 않습니다.');
         }
-        allRooms.add(data.room);
-        if (data.password && !roomPasswords[data.room]) roomPasswords[data.room] = data.password;
 
+        // ⭐️ [중복 방지] 이미 소켓이 해당 방에 들어가 있다면 추가 입장 처리를 하지 않음
+        if (socket.rooms.has(data.room)) return;
+
+        allRooms.add(data.room);
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
 
-        // 과거 메시지 불러오기 (시간 포맷 포함)
+        // 과거 메시지 로드
         db.all("SELECT id, name, text, type, fileName, read_count, strftime('%H:%M', created_at, 'localtime') as time FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100", [data.room], (err, rows) => {
             if (!err) socket.emit('load messages', rows);
         });
 
+        // 입장 알림 발송
         io.to(data.room).emit('chat message', {
             name: '시스템', text: `${data.name}님이 입장했습니다.`, type: 'system'
         });
+
         sendRoomCounts();
     });
 
