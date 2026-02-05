@@ -63,7 +63,7 @@ io.on('connection', (socket) => {
             if (!err) io.to(data.room).emit('all read');
         });
 
-        // ⭐ strftime으로 시간 데이터 명시적으로 가져오기
+        // ⭐ DB 로딩 시 시간 데이터 포함
         db.all("SELECT id, name, text, type, fileName, read_count, strftime('%H:%M', created_at, 'localtime') as time FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100", [data.room], (err, rows) => {
             if (!err) socket.emit('load messages', rows);
         });
@@ -85,7 +85,6 @@ io.on('connection', (socket) => {
             }
         }
         const countInRoom = (watchingCount > 1) ? 0 : 1;
-        // ⭐ 실시간 메시지 전송용 시간 생성
         const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
         db.run("INSERT INTO messages (room, name, text, type, fileName, read_count) VALUES (?, ?, ?, ?, ?, ?)",
@@ -95,7 +94,7 @@ io.on('connection', (socket) => {
                         id: this.lastID,
                         ...data,
                         read_count: countInRoom,
-                        time: timeStr // ⭐ 시간 포함
+                        time: timeStr
                     });
                 }
             });
