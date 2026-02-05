@@ -167,22 +167,25 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
+        /* 읽음 숫자 위치 잡기 */
         .read-unread {
-            color: #0984e3;
-            font-size: 0.75rem;
+            color: #ffeb33;
+            /* 카톡 느낌 노란색 (바탕이 어두우면 흰색/노란색 추천) */
+            font-size: 0.7rem;
             font-weight: bold;
             position: absolute;
-            left: -25px;
             bottom: 5px;
+            /* 말풍선 바닥에 맞춤 */
         }
 
+        /* 내 메시지 숫자는 말풍선 왼쪽 밖으로 */
         .my-msg .read-unread {
             left: -25px;
         }
 
+        /* 상대 메시지 숫자는 말풍선 오른쪽 밖으로 */
         .other-msg .read-unread {
             right: -25px;
-            left: auto;
         }
 
         /* 입력 폼 */
@@ -459,29 +462,16 @@
             const item = document.createElement('li');
             item.id = `msg-${data.id}`;
 
-            // ✅ 1. 시스템 메시지 처리 (입퇴장 알림 등)
+            // 1. 시스템 메시지 (수정 없음)
             if (data.type === 'system') {
-                item.style.cssText = `
-                align-self: center; 
-                background: rgba(0, 0, 0, 0.08); /* 조금 더 진하게 */
-                color: #777; 
-                font-size: 0.75rem; 
-                padding: 4px 12px; 
-                border-radius: 15px; 
-                margin: 15px 0; 
-                list-style: none;
-                text-align: center;
-                max-width: 80%; /* 너무 넓지 않게 */
-                box-shadow: none;
-                display: inline-block; /* 텍스트 길이에 배경 맞춤 */
-                `;
+                item.style.cssText = `align-self:center; background:rgba(0,0,0,0.08); color:#777; font-size:0.75rem; padding:4px 12px; border-radius:15px; margin:15px 0; list-style:none; text-align:center; max-width:80%; box-shadow:none; display:inline-block;`;
                 item.innerHTML = `${data.text}`;
                 list.appendChild(item);
                 list.scrollTop = list.scrollHeight;
                 return;
             }
 
-            // --- 2. 일반 메시지 콘텐츠 구성 ---
+            // 2. 일반 메시지 컨텐츠 (수정 없음)
             let content = '';
             if (data.type === 'image') {
                 content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="openImageViewer(this.src)">`;
@@ -491,27 +481,27 @@
                 content = data.text;
             }
 
+            // ⭐ 3. 읽음 숫자 처리 (이 부분을 이렇게 바꾸세요)
+            // 숫자가 0보다 클 때만 보여주고, 0이면 아예 안 나오게 합니다.
             const readHtml = data.read_count > 0 ? `<span class="read-unread">${data.read_count}</span>` : '';
 
-            // --- 3. 내 메시지 vs 상대 메시지 렌더링 ---
+            // ⭐ 4. 렌더링 순서 조정 (매우 중요)
             if (data.name === userName) {
                 item.className = 'my-msg';
+                // [내 메시지] 숫자(왼쪽) + 내용(오른쪽)
                 item.innerHTML = `${readHtml}${content}`;
             } else {
                 item.className = 'other-msg';
+                // [상대 메시지] 이름 + 내용(왼쪽) + 숫자(오른쪽)
                 item.innerHTML = `<strong>${data.name}</strong><br>${content}${readHtml}`;
             }
 
-            // --- 4. 우클릭 메뉴 설정 ---
+            // 5. 우클릭 메뉴 (수정 없음)
             item.oncontextmenu = (e) => {
                 e.preventDefault();
-                selectedId = data.id;
-                selectedSender = data.name;
-                selectedText = (data.type === 'text') ? data.text : '[파일]';
+                selectedId = data.id; selectedSender = data.name; selectedText = (data.type === 'text') ? data.text : '[파일]';
                 const menu = document.getElementById('context-menu');
-                menu.style.display = 'block';
-                menu.style.left = e.clientX + 'px';
-                menu.style.top = e.clientY + 'px';
+                menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
             };
 
             list.appendChild(item);
@@ -572,6 +562,11 @@
             const savedTheme = localStorage.getItem('freeTalkTheme');
             if (savedTheme) { document.getElementById('theme-select').value = savedTheme; changeTheme(); }
         };
+
+        socket.on('all read', () => {
+            // 화면에 있는 모든 '1' 혹은 숫자를 찾아서 지워버림
+            document.querySelectorAll('.read-unread').forEach(el => el.remove());
+        });
     </script>
 </body>
 
