@@ -327,10 +327,60 @@
             border-radius: 5px;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
         }
+
+        /* 다크 모드 스타일 */
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        body.dark-mode .room-container {
+            background: #2d2d2d;
+            color: #ffffff;
+        }
+
+        body.dark-mode #notice-bar {
+            background: #333;
+            color: white;
+        }
+
+        /* 보라 테마 스타일 */
+        body.purple-mode {
+            background-color: #f3e5f5;
+        }
+
+        body.purple-mode .room-container {
+            background: #ffffff;
+            border: 2px solid #a29bfe;
+        }
     </style>
 </head>
 
 <body>
+    <div style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer;"
+        onclick="toggleSettings()">⚙️</div>
+
+    <div id="settings-modal"
+        style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:10001;">
+        <h3 style="margin-top:0;">🛠️ 환경설정</h3>
+        <hr>
+        <div style="margin: 20px 0;">
+            <label>🎨 화면 테마</label>
+            <select id="theme-select" onchange="changeTheme()"
+                style="width:100%; padding:8px; border-radius:8px; margin-top:5px;">
+                <option value="light">기본 (라이트)</option>
+                <option value="dark">다크 모드</option>
+                <option value="purple">보라 감성</option>
+            </select>
+        </div>
+        <div style="margin: 20px 0; display:flex; justify-content:space-between; align-items:center;">
+            <label>🔔 푸시 알림</label>
+            <input type="checkbox" id="noti-toggle" onchange="toggleNotification()" style="width:20px; height:20px;">
+        </div>
+        <button onclick="toggleSettings()"
+            style="width:100%; padding:10px; background:#6e8efb; color:white; border:none; border-radius:10px; cursor:pointer;">닫기</button>
+    </div>
+
     <div id="list-area">
         <div class="room-container">
             <h2 style="color: #6e8efb;">💬 프리톡</h2>
@@ -536,6 +586,55 @@
                 input.value = '';
             }
         }
+
+        // 설정창 열고 닫기
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // 테마 변경 로직
+        function changeTheme() {
+            const theme = document.getElementById('theme-select').value;
+            document.body.classList.remove('dark-mode', 'purple-mode'); // 기존 테마 제거
+
+            if (theme === 'dark') document.body.classList.add('dark-mode');
+            else if (theme === 'purple') document.body.classList.add('purple-mode');
+
+            // 설정 저장 (새로고침해도 유지되게)
+            localStorage.setItem('freeTalkTheme', theme);
+        }
+
+        // 알림 설정 (브라우저 권한 요청)
+        function toggleNotification() {
+            const isChecked = document.getElementById('noti-toggle').checked;
+            if (isChecked) {
+                Notification.requestPermission().then(permission => {
+                    if (permission !== 'granted') {
+                        alert('알림 권한을 허용해주셔야 알림을 받을 수 있습니다.');
+                        document.getElementById('noti-toggle').checked = false;
+                    }
+                });
+            }
+        }
+
+        // 메시지 수신 시 알림 띄우기 (socket.on('chat message') 안에 추가하세요)
+        socket.on('chat message', (data) => {
+            addMessage(data);
+            // 내가 보낸 게 아니고, 알림 설정이 켜져 있을 때만 알림 전송
+            if (data.name !== userName && document.getElementById('noti-toggle').checked) {
+                new Notification(`프리톡 - ${data.name}`, { body: data.text, icon: '프리톡로고.png' });
+            }
+        });
+
+        // 페이지 로드 시 기존 테마 적용
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('freeTalkTheme');
+            if (savedTheme) {
+                document.getElementById('theme-select').value = savedTheme;
+                changeTheme();
+            }
+        };
     </script>
 
     <div id="image-modal" onclick="this.style.display='none'">
