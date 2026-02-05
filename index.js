@@ -26,6 +26,7 @@ db.serialize(() => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
     db.run(`CREATE INDEX IF NOT EXISTS idx_room ON messages (room)`);
+    // read_count 컬럼 없을 경우 대비
     db.run(`ALTER TABLE messages ADD COLUMN read_count INTEGER DEFAULT 0`, (err) => { });
 });
 
@@ -43,19 +44,32 @@ function sendRoomCounts() {
 
 io.on('connection', (socket) => {
     sendRoomCounts();
+
     socket.on('join room', (data) => {
         if (roomPasswords[data.room] && roomPasswords[data.room] !== data.password) {
             return socket.emit('error message', '비밀번호가 일치하지 않습니다.');
         }
         allRooms.add(data.room);
         if (data.password && !roomPasswords[data.room]) roomPasswords[data.room] = data.password;
+        
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
+
+        // 1. 과거 메시지 로드
         db.all("SELECT id, name, text, type, read_count, likes, strftime('%H:%M', created_at, 'localtime') as time FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 50", [data.room], (err, rows) => {
             if (!err) socket.emit('load messages', rows);
         });
-        io.to(data.room).emit('notice', `${data.name}님이 입장했습니다.`);
+
+        // 2. 입장 알림 전송 (type: 'system')
+        io.to(data.room).emit('chat message', {
+            id: Date.now(),
+            name: '시스템',
+            text: `${data.name}님이 입장했습니다.`,
+            type: 'system',
+            time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+        });
+
         sendRoomCounts();
     });
 
@@ -72,6 +86,7 @@ io.on('connection', (socket) => {
         const timeString = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
         const roomMembers = io.sockets.adapter.rooms.get(data.room);
         const countInRoom = (roomMembers && roomMembers.size > 1) ? 0 : 1;
+        
         db.run("INSERT INTO messages (room, name, text, type, read_count) VALUES (?, ?, ?, ?, ?)",
             [data.room, data.name, data.text, data.type || 'text', countInRoom], function (err) {
                 if (!err) {
@@ -82,16 +97,6 @@ io.on('connection', (socket) => {
             });
     });
 
-    socket.on('like message', (id) => {
-        db.run("UPDATE messages SET likes = likes + 1 WHERE id = ?", [id], function (err) {
-            if (!err) {
-                db.get("SELECT id, likes FROM messages WHERE id = ?", [id], (err, row) => {
-                    if (row) io.to(socket.room).emit('update likes', row);
-                });
-            }
-        });
-    });
-
     socket.on('delete message', (id) => {
         db.run("DELETE FROM messages WHERE id = ?", [id], (err) => {
             if (!err) io.to(socket.room).emit('message deleted', id);
@@ -100,13 +105,33 @@ io.on('connection', (socket) => {
 
     socket.on('leave room', () => {
         if (socket.room) {
-            const r = socket.room; socket.leave(r);
-            io.to(r).emit('notice', `${socket.userName}님이 퇴장했습니다.`);
-            socket.room = null; sendRoomCounts();
+            const r = socket.room;
+            const n = socket.userName;
+            io.to(r).emit('chat message', {
+                id: Date.now(),
+                name: '시스템',
+                text: `${n}님이 퇴장했습니다.`,
+                type: 'system',
+                time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+            });
+            socket.leave(r);
+            socket.room = null;
+            sendRoomCounts();
         }
     });
 
-    socket.on('disconnect', () => { sendRoomCounts(); });
+    socket.on('disconnect', () => { 
+        if (socket.room && socket.userName) {
+            io.to(socket.room).emit('chat message', {
+                id: Date.now(),
+                name: '시스템',
+                text: `${socket.userName}님이 퇴장했습니다.`,
+                type: 'system',
+                time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+            });
+        }
+        sendRoomCounts(); 
+    });
 });
 
 server.listen(3000, () => { console.log('http://localhost:3000'); });
