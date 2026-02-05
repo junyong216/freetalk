@@ -14,12 +14,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#6e8efb">
     <style>
-        /* 형님이 주신 기본 스타일 유지 */
         body {
             font-family: 'Pretendard', sans-serif;
             margin: 0;
             background-color: #f0f2f5;
-            overflow: hidden;
+            overflow-x: hidden;
+            /* 가로 스크롤이 생기는 걸 원천 차단합니다 */
+
+            /* 박스 크기 계산법을 변경해서 패딩 때문에 커지는 걸 막습니다 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
         #list-area {
@@ -32,13 +38,17 @@
 
         .room-container {
             background: white;
-            padding: 30px;
+            padding: 20px;
+            /* 패딩을 살짝 줄이면 여유가 생깁니다 */
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 
-            /* [수정] 고정값 380px 대신 90%를 써서 폰 화면에 꽉 차게 합니다 */
+            /* [수정] 고정값 380px을 지우고 아래처럼 바꾸세요 */
             width: 90%;
-            max-width: 400px;
+            /* 화면 너비의 90%만 차지해라 */
+            max-width: 380px;
+            /* 대신 아무리 커져도 380px은 넘지 마라 */
+
             text-align: center;
         }
 
