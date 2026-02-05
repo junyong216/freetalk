@@ -310,25 +310,21 @@
         // index.html 내 <script> 부분의 함수들
 
         function goBack() {
-            // ⭐️ [퇴장 처리] 뒤로가기 시 서버에 명확히 나갔음을 알림
-            if (currentRoom) {
-                socket.emit('leave room');
-                currentRoom = '';
-            }
+            // ⭐️ socket.emit('leave room')을 여기서 지웁니다! 
+            // 그냥 화면만 가리는 겁니다. 연결은 살아있어야 합니다.
 
-            // UI 전환
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
             document.getElementById('footer-bar').style.display = 'block';
             document.getElementById('main-settings-btn').style.display = 'flex';
-
-            // 메시지 내역 초기화 (다시 들어올 때 깨끗하게 보이도록)
-            document.getElementById('messages').innerHTML = '';
         }
 
         function leaveChat() {
-            if (confirm("이 방에서 나갈까요?")) {
-                goBack(); // goBack에서 모든 퇴장 로직 처리
+            // ⭐️ "방 나가기" 버튼을 눌렀을 때만 진짜로 나갑니다.
+            if (confirm("이 방에서 완전히 나갈까요? (입장 메시지가 다시 뜰 수 있습니다)")) {
+                socket.emit('leave room'); // 진짜 나갈 때만 서버에 알림
+                currentRoom = '';
+                goBack();
             }
         }
         function createNewRoom() { const val = document.getElementById('new-room-input').value; if (val) enterRoom(val); }
