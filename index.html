@@ -235,8 +235,15 @@
         socket.on('chat message', (data) => { addMessage(data); });
         socket.on('load messages', (messages) => {
             const list = document.getElementById('messages');
-            list.innerHTML = '';
-            if (messages) messages.forEach(addMessage);
+            list.innerHTML = ''; // 중복 방지를 위해 한 번 더 비움
+            if (messages) {
+                messages.forEach(msg => {
+                    // addMessage를 호출하기 전에 room 정보를 현재 방으로 강제 맞춤
+                    // (필터링 통과를 위해)
+                    msg.room = currentRoom;
+                    addMessage(msg);
+                });
+            }
         });
 
         socket.on('room counts', (data) => {
@@ -308,18 +315,21 @@
                 if (!userName) return;
             }
 
+            // 1. 화면 일단 비우기 (새로 그릴 준비)
             const list = document.getElementById('messages');
-            list.innerHTML = ''; // 이전 방 메시지 지우기
+            list.innerHTML = '';
 
-            // ⭐️ 수정: 빈 값이 아니라 들어가는 방 이름(roomName)을 넣어야 합니다!
+            // 2. 현재 방 이름 설정 (⭐️ 중요: 요청보다 먼저 해야 함)
             currentRoom = roomName;
 
+            // 3. UI 전환
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
             document.getElementById('footer-bar').style.display = 'none';
             document.getElementById('main-settings-btn').style.display = 'none';
             document.getElementById('room-title').textContent = roomName;
 
+            // 4. 서버에 "이 방 내역 다 줘!" 요청
             socket.emit('join room', { room: roomName, name: userName });
         }
 
