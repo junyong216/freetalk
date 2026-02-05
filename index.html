@@ -7,7 +7,6 @@
     <title>프리톡 (Free Talk)</title>
     <link rel="icon" href="프리톡로고.png" type="image/png">
     <style>
-        /* 기본 스타일 */
         body {
             font-family: 'Pretendard', sans-serif;
             margin: 0;
@@ -62,7 +61,6 @@
             font-weight: bold;
         }
 
-        /* 채팅 영역 */
         #chat-area {
             display: none;
             flex-direction: column;
@@ -76,7 +74,7 @@
             justify-content: space-between;
             align-items: center;
             background: white;
-            padding: 10px 15px;
+            padding: 12px;
             border-radius: 12px;
             margin-bottom: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
@@ -117,7 +115,6 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
-        /* [수정] 버튼 위치 고정 - 겹침 방지 */
         #main-settings-btn {
             position: fixed;
             top: 15px;
@@ -136,7 +133,6 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
-        /* 하단 전송바 */
         #form {
             display: flex;
             gap: 10px;
@@ -222,64 +218,70 @@
         const socket = io();
         let userName = '', currentRoom = '';
 
-        // [중요] 수신 시 예외 처리 제거 - 무조건 표시
+        // 수신부
         socket.on('chat message', (data) => {
-            console.log("서버 데이터:", data);
+            console.log("메시지 받음:", data);
             addMessage(data);
         });
 
         socket.on('load messages', (messages) => {
-            document.getElementById('messages').innerHTML = '';
-            if (messages) messages.forEach(addMessage);
+            const list = document.getElementById('messages');
+            list.innerHTML = '';
+            if (messages && Array.isArray(messages)) {
+                messages.forEach(addMessage);
+            }
         });
 
         socket.on('room counts', (data) => {
             const list = document.getElementById('room-list');
             list.innerHTML = '';
-            for (const room in data.roomCounts) {
-                const item = document.createElement('div');
-                item.className = 'room-item';
-                item.onclick = () => enterRoom(room);
-                item.innerHTML = `<span>${room}</span><span>${data.roomCounts[room]}명</span>`;
-                list.appendChild(item);
+            if (data.roomCounts) {
+                for (const room in data.roomCounts) {
+                    const item = document.createElement('div');
+                    item.className = 'room-item';
+                    item.onclick = () => enterRoom(room);
+                    item.innerHTML = `<span>${room}</span><span>${data.roomCounts[room]}명</span>`;
+                    list.appendChild(item);
+                }
             }
         });
 
         function addMessage(data) {
-            if (!data) return;
-            const list = document.getElementById('messages');
-            const item = document.createElement('li');
+            try {
+                if (!data) return;
+                const list = document.getElementById('messages');
+                const item = document.createElement('li');
 
-            // 시스템 메시지 (입장/퇴장)
-            if (data.name === '시스템' || data.type === 'system') {
-                item.style.cssText = "align-self:center; background:rgba(0,0,0,0.05); color:#777; font-size:0.8rem; border-radius:10px; padding:5px 15px; margin:5px 0;";
-                item.textContent = data.text;
+                if (data.name === '시스템' || data.type === 'system') {
+                    item.style.cssText = "align-self:center; background:rgba(0,0,0,0.05); color:#777; font-size:0.8rem; border-radius:10px; padding:5px 15px; margin:5px 0;";
+                    item.textContent = data.text;
+                    list.appendChild(item);
+                    list.scrollTop = list.scrollHeight;
+                    return;
+                }
+
+                const isMy = (data.name === userName);
+                item.className = isMy ? 'my-msg' : 'other-msg';
+
+                let messageBody = (data.type === 'image') ?
+                    `<img src="${data.text}" style="max-width:200px; border-radius:10px; display:block;">` :
+                    (data.text || "");
+
+                const timeStr = data.time || "";
+                const readCnt = (data.read_count > 0) ? data.read_count : "";
+
+                const infoHtml = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column;">
+                    <span style="color:#ffeb33; font-size:0.75rem; font-weight:bold;">${readCnt}</span>
+                    <span style="color:#999; font-size:0.65rem;">${timeStr}</span>
+                </div>`;
+
+                item.innerHTML = isMy ? `${messageBody}${infoHtml}` : `<strong>${data.name}</strong><br>${messageBody}${infoHtml}`;
                 list.appendChild(item);
                 list.scrollTop = list.scrollHeight;
-                return;
-            }
-
-            const isMy = (data.name === userName);
-            item.className = isMy ? 'my-msg' : 'other-msg';
-
-            // 이미지 또는 일반 텍스트 표시
-            let content = (data.type === 'image') ?
-                `<img src="${data.text}" style="max-width:200px; border-radius:10px;">` :
-                (data.text || "");
-
-            const timeStr = data.time || "";
-            const readCnt = (data.read_count > 0) ? data.read_count : "";
-
-            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column;">
-                <span style="color:#ffeb33; font-size:0.75rem; font-weight:bold;">${readCnt}</span>
-                <span style="color:#999; font-size:0.65rem;">${timeStr}</span>
-            </div>`;
-
-            item.innerHTML = isMy ? `${content}${info}` : `<strong>${data.name}</strong><br>${content}${info}`;
-            list.appendChild(item);
-            list.scrollTop = list.scrollHeight;
+            } catch (e) { console.error(e); }
         }
 
+        // 전송부
         document.getElementById('form').addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('input');
@@ -294,13 +296,33 @@
             }
         });
 
+        // ⭐ 누락되었던 핵심 함수!
+        function uploadFile(input) {
+            const file = input.files[0];
+            if (file && currentRoom) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    socket.emit('chat message', {
+                        room: currentRoom,
+                        name: userName,
+                        text: e.target.result,
+                        type: 'image'
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         function enterRoom(roomName) {
-            if (!userName) { userName = prompt("닉네임:"); if (!userName) return; }
+            if (!userName) {
+                userName = prompt("닉네임:");
+                if (!userName) return;
+            }
             currentRoom = roomName;
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
             document.getElementById('footer-bar').style.display = 'none';
-            document.getElementById('main-settings-btn').style.display = 'none'; // 채팅방에선 설정 숨김
+            document.getElementById('main-settings-btn').style.display = 'none';
             document.getElementById('room-title').textContent = roomName;
             socket.emit('join room', { room: roomName, name: userName });
         }
@@ -314,7 +336,7 @@
 
         function leaveChat() { if (confirm("방에서 완전히 나갈까요?")) { socket.emit('leave room'); location.reload(); } }
         function createNewRoom() { const val = document.getElementById('new-room-input').value; if (val) enterRoom(val); }
-        function toggleSettings() { alert('설정 메뉴입니다.'); }
+        function toggleSettings() { alert('준비 중입니다.'); }
     </script>
 </body>
 
