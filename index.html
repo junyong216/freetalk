@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#6e8efb">
-    
+
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
@@ -21,7 +21,8 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overscroll-behavior-y: contain; /* 당겨서 새로고침 가능하게 유지 */
+            overscroll-behavior-y: contain;
+            /* 당겨서 새로고침 가능하게 유지 */
         }
 
         /* 메인 리스트 영역 */
@@ -79,15 +80,18 @@
 
         #new-room-input {
             flex: 1;
-            min-width: 0; /* 찌그러짐 방지 */
+            min-width: 0;
+            /* 찌그러짐 방지 */
             padding: 12px;
             border-radius: 10px;
             border: 1px solid #ddd;
         }
 
         .create-btn {
-            flex-shrink: 0; /* 버튼 크기 고정 */
-            white-space: nowrap; /* 글자 세로 방지 */
+            flex-shrink: 0;
+            /* 버튼 크기 고정 */
+            white-space: nowrap;
+            /* 글자 세로 방지 */
             padding: 10px 20px;
             background: #a777e3;
             color: white;
@@ -120,8 +124,21 @@
             z-index: 10;
         }
 
-        #notice-content-area { flex: 1; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .close-notice { margin-left: 10px; cursor: pointer; color: #ccc; font-weight: bold; font-size: 1.2rem; }
+        #notice-content-area {
+            flex: 1;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .close-notice {
+            margin-left: 10px;
+            cursor: pointer;
+            color: #ccc;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
 
         /* 메시지 영역 */
         #messages {
@@ -132,7 +149,8 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            margin-bottom: 110px !important;
+            margin-bottom: 140px !important;
+            /* 입력창 높이만큼 더 확보 */
         }
 
         #messages li {
@@ -146,11 +164,35 @@
             position: relative;
         }
 
-        .my-msg { align-self: flex-end; background-color: #a29bfe !important; color: white; border-bottom-right-radius: 2px; align-items: flex-end; }
-        .other-msg { align-self: flex-start; background-color: #fff; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); }
+        .my-msg {
+            align-self: flex-end;
+            background-color: #a29bfe !important;
+            color: white;
+            border-bottom-right-radius: 2px;
+            align-items: flex-end;
+        }
 
-        .read-unread { color: #0984e3 !important; font-size: 0.75rem; font-weight: bold; position: absolute; left: -25px; bottom: 5px; }
-        .time { font-size: 0.65rem; opacity: 0.8; }
+        .other-msg {
+            align-self: flex-start;
+            background-color: #fff;
+            color: #333;
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .read-unread {
+            color: #0984e3 !important;
+            font-size: 0.75rem;
+            font-weight: bold;
+            position: absolute;
+            left: -25px;
+            bottom: 5px;
+        }
+
+        .time {
+            font-size: 0.65rem;
+            opacity: 0.8;
+        }
 
         /* 입력 폼 */
         #form {
@@ -158,7 +200,8 @@
             gap: 10px;
             padding: 15px;
             position: fixed;
-            bottom: 25px !important;
+            bottom: 60px !important;
+            /* 푸터 바 위에 안정적으로 위치하게 조정 */
             left: 50%;
             transform: translateX(-50%);
             width: 95%;
@@ -169,7 +212,11 @@
             z-index: 100;
         }
 
-        #input { flex-grow: 1; border: none; outline: none; }
+        #input {
+            flex-grow: 1;
+            border: none;
+            outline: none;
+        }
 
         /* 하단 푸터 */
         #footer-bar {
@@ -197,29 +244,66 @@
             z-index: 10000;
         }
 
-        #context-menu div { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        #context-menu div {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f5f5f5;
+            font-size: 14px;
+        }
 
         /* 테마 모드들 */
-        body.dark-mode { background-color: #1a1a1a; color: #ffffff; }
-        body.dark-mode .room-container, body.dark-mode #notice-bar, body.dark-mode #form { background: #2d2d2d; color: white; }
-        body.purple-mode { background-color: #f3e5f5; }
+        body.dark-mode {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        body.dark-mode .room-container,
+        body.dark-mode #notice-bar,
+        body.dark-mode #form {
+            background: #2d2d2d;
+            color: white;
+        }
+
+        body.purple-mode {
+            background-color: #f3e5f5;
+        }
 
         /* 이미지 확대 모달 */
-        #image-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; }
-        #modal-img { max-width: 90%; max-height: 90%; }
+        #image-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            align-items: center;
+            justify-content: center;
+        }
+
+        #modal-img {
+            max-width: 90%;
+            max-height: 90%;
+        }
     </style>
 </head>
 
 <body>
-    <div id="install-btn" style="position: absolute; top: 20px; right: 60px; font-size: 1.5rem; cursor: pointer; display: none; z-index: 1001;" onclick="installApp()">📲</div>
-    <div style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; z-index: 1001;" onclick="toggleSettings()">⚙️</div>
+    <div id="install-btn"
+        style="position: absolute; top: 20px; right: 60px; font-size: 1.5rem; cursor: pointer; display: none; z-index: 1001;"
+        onclick="installApp()">📲</div>
+    <div style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; z-index: 1001;"
+        onclick="toggleSettings()">⚙️</div>
 
-    <div id="settings-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:10001;">
+    <div id="settings-modal"
+        style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:10001;">
         <h3 style="margin-top:0;">🛠️ 환경설정</h3>
         <hr>
         <div style="margin: 20px 0;">
             <label>🎨 화면 테마</label>
-            <select id="theme-select" onchange="changeTheme()" style="width:100%; padding:8px; border-radius:8px; margin-top:5px;">
+            <select id="theme-select" onchange="changeTheme()"
+                style="width:100%; padding:8px; border-radius:8px; margin-top:5px;">
                 <option value="light">기본 (라이트)</option>
                 <option value="dark">다크 모드</option>
                 <option value="purple">보라 감성</option>
@@ -229,7 +313,8 @@
             <label>🔔 푸시 알림</label>
             <input type="checkbox" id="noti-toggle" onchange="toggleNotification()" style="width:20px; height:20px;">
         </div>
-        <button onclick="toggleSettings()" style="width:100%; padding:10px; background:#6e8efb; color:white; border:none; border-radius:10px; cursor:pointer;">닫기</button>
+        <button onclick="toggleSettings()"
+            style="width:100%; padding:10px; background:#6e8efb; color:white; border:none; border-radius:10px; cursor:pointer;">닫기</button>
     </div>
 
     <div id="list-area">
@@ -244,9 +329,11 @@
     </div>
 
     <div id="chat-area">
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:white; margin-bottom:5px; border-radius:12px;">
+        <div
+            style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:white; margin-bottom:5px; border-radius:12px;">
             <div id="room-title" style="font-weight:bold;"></div>
-            <button onclick="leaveChat()" style="background:#ff4d4d; color:white; border:none; padding:5px 15px; border-radius:8px; cursor:pointer;">나가기</button>
+            <button onclick="leaveChat()"
+                style="background:#ff4d4d; color:white; border:none; padding:5px 15px; border-radius:8px; cursor:pointer;">나가기</button>
         </div>
 
         <div id="notice-bar">
@@ -260,15 +347,18 @@
 
         <form id="form">
             <input type="file" id="file-input" style="display:none;" onchange="uploadFile(this)" accept="*">
-            <button type="button" style="background:none; border:none; font-size:1.2rem; cursor:pointer;" onclick="document.getElementById('file-input').click()">📎</button>
+            <button type="button" style="background:none; border:none; font-size:1.2rem; cursor:pointer;"
+                onclick="document.getElementById('file-input').click()">📎</button>
             <input id="input" autocomplete="off" placeholder="메시지나 파일을 보내세요..." />
-            <button type="submit" style="background:#6e8efb; color:white; border:none; padding:10px 15px; border-radius:20px; cursor:pointer;">전송</button>
+            <button type="submit"
+                style="background:#6e8efb; color:white; border:none; padding:10px 15px; border-radius:20px; cursor:pointer;">전송</button>
         </form>
     </div>
 
     <div id="footer-bar">
         문의 <strong>제이투코어(J2CORE)</strong> 대표 <strong>정준용</strong>
-        <a href="mailto:jjyong3872@naver.com" style="color:#0984e3; text-decoration:none; font-weight:bold; margin-left:5px;">📩 jjyong3872@naver.com</a>
+        <a href="mailto:jjyong3872@naver.com"
+            style="color:#0984e3; text-decoration:none; font-weight:bold; margin-left:5px;">📩 jjyong3872@naver.com</a>
     </div>
 
     <div id="context-menu">
@@ -422,6 +512,62 @@
             }
         });
 
+        const chatArea = document.getElementById('chat-area');
+        const inputField = document.getElementById('input');
+
+        // 1. 붙여넣기 (Ctrl + V) 처리
+        inputField.addEventListener('paste', (e) => {
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const file = items[i].getAsFile();
+                    uploadDirectFile(file); // 이미지 파일이면 바로 업로드
+                }
+            }
+        });
+
+        // 2. 드래그 앤 드롭 처리
+        // 드래그 해서 들어올 때 효과 (선택사항)
+        chatArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            chatArea.style.backgroundColor = "rgba(110, 142, 251, 0.05)"; // 살짝 푸른빛
+        });
+
+        // 드래그 나갈 때
+        chatArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            chatArea.style.backgroundColor = "";
+        });
+
+        // 파일을 놓았을 때 (Drop)
+        chatArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            chatArea.style.backgroundColor = "";
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                uploadDirectFile(files[0]); // 첫 번째 파일 바로 전송
+            }
+        });
+
+        // [공통] 파일 전송 실행 함수 (기존 uploadFile 로직 활용)
+        function uploadDirectFile(file) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const isImage = file.type.startsWith('image/');
+                socket.emit('chat message', {
+                    room: currentRoom,
+                    name: userName,
+                    text: e.target.result,
+                    type: isImage ? 'image' : 'file',
+                    fileName: file.name
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
         // 설정 및 테마
         function toggleSettings() {
             const modal = document.getElementById('settings-modal');
@@ -450,4 +596,5 @@
         };
     </script>
 </body>
+
 </html>
