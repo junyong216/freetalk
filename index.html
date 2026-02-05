@@ -255,7 +255,7 @@
 
         function addMessage(data) {
             if (!data) return;
-            if (data.room && data.room !== currentRoom && data.name !== '시스템') {
+            if (data.room && data.room !== currentRoom) {
                 return;
             }
             const list = document.getElementById('messages');

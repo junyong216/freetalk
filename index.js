@@ -43,27 +43,48 @@ io.on('connection', (socket) => {
     sendRoomCounts();
 
     socket.on('join room', (data) => {
+        // 1. [중요] 새 방에 들어가기 전, 기존에 접속해 있던 모든 방에서 나갑니다.
+        // 본인의 고유 ID 방(socket.id)을 제외한 모든 방을 비워야 메시지가 섞이지 않습니다.
+        socket.rooms.forEach(room => {
+            if (room !== socket.id) {
+                socket.leave(room);
+            }
+        });
+
         const isAlreadyIn = socket.rooms.has(data.room);
 
-        // 기존 방에서 나가고 새 방에 들어가는 처리가 확실해야 합니다.
+        // 2. 새 방 입장 및 정보 저장
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
 
-        // ⭐️ WHERE room = ? 이 부분이 핵심입니다.
-        db.all("SELECT id, name, text, type, fileName, read_count, strftime('%H:%M', created_at, 'localtime') as time FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100",
-            [data.room], (err, rows) => {
-                if (!err) {
-                    // 해당 소켓(본인)에게만 그 방의 과거 내역을 전달합니다.
-                    socket.emit('load messages', rows);
-                }
-            });
+        // 3. 해당 방의 메시지만 불러오기 (room 컬럼 반드시 포함)
+        // 클라이언트의 addMessage 함수가 이 'room' 정보를 보고 필터링합니다.
+        const loadQuery = `
+        SELECT id, name, text, type, fileName, room, read_count, 
+        strftime('%H:%M', created_at, 'localtime') as time 
+        FROM messages 
+        WHERE room = ? 
+        ORDER BY created_at ASC LIMIT 100
+    `;
 
+        db.all(loadQuery, [data.room], (err, rows) => {
+            if (!err) {
+                // 과거 내역은 본인(socket)에게만 전송
+                socket.emit('load messages', rows);
+            }
+        });
+
+        // 4. 입장 시스템 메시지 (처음 들어온 경우만)
         if (!isAlreadyIn) {
             io.to(data.room).emit('chat message', {
-                name: '시스템', text: `${data.name}님이 입장했습니다.`, type: 'system', room: data.room
+                name: '시스템',
+                text: `${data.name}님이 입장했습니다.`,
+                type: 'system',
+                room: data.room // 방 정보 포함
             });
         }
+
         sendRoomCounts();
     });
 
@@ -95,14 +116,16 @@ io.on('connection', (socket) => {
     socket.on('leave room', () => {
         if (socket.room) {
             io.to(socket.room).emit('chat message', {
-                name: '시스템', text: `${socket.userName}님이 퇴장했습니다.`, type: 'system'
+                name: '시스템',
+                text: `${socket.userName}님이 퇴장했습니다.`,
+                type: 'system',
+                room: socket.room // ⭐️ 이 줄을 추가해 주세요!
             });
             socket.leave(socket.room);
             socket.room = null;
             sendRoomCounts();
         }
     });
-
     socket.on('disconnect', () => { sendRoomCounts(); });
 });
 
