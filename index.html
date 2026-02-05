@@ -222,6 +222,27 @@
             z-index: 1000;
         }
 
+        /* [CSS 부분에 추가] 카톡 스타일 시스템 메시지 */
+        .system-msg {
+            align-self: center !important;
+            /* 무조건 중앙 정렬 */
+            background: none !important;
+            /* 말풍선 배경 제거 */
+            color: #888 !important;
+            /* 흐린 회색 글씨 */
+            font-size: 0.8rem !important;
+            /* 글자 크기 작게 */
+            margin: 15px 0 !important;
+            /* 위아래 간격 */
+            text-align: center;
+            width: 100%;
+            box-shadow: none !important;
+            /* 그림자 제거 */
+            border: none !important;
+            max-width: 100% !important;
+            /* 너비 제한 해제 */
+        }
+
         /* 컨텍스트 메뉴 */
         #context-menu {
             display: none;
@@ -438,6 +459,29 @@
             const item = document.createElement('li');
             item.id = `msg-${data.id}`;
 
+            // ✅ 1. 시스템 메시지 처리 (입퇴장 알림 등)
+            if (data.type === 'system') {
+                item.style.cssText = `
+                align-self: center; 
+                background: rgba(0, 0, 0, 0.08); /* 조금 더 진하게 */
+                color: #777; 
+                font-size: 0.75rem; 
+                padding: 4px 12px; 
+                border-radius: 15px; 
+                margin: 15px 0; 
+                list-style: none;
+                text-align: center;
+                max-width: 80%; /* 너무 넓지 않게 */
+                box-shadow: none;
+                display: inline-block; /* 텍스트 길이에 배경 맞춤 */
+                `;
+                item.innerHTML = `${data.text}`;
+                list.appendChild(item);
+                list.scrollTop = list.scrollHeight;
+                return;
+            }
+
+            // --- 2. 일반 메시지 콘텐츠 구성 ---
             let content = '';
             if (data.type === 'image') {
                 content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="openImageViewer(this.src)">`;
@@ -449,6 +493,7 @@
 
             const readHtml = data.read_count > 0 ? `<span class="read-unread">${data.read_count}</span>` : '';
 
+            // --- 3. 내 메시지 vs 상대 메시지 렌더링 ---
             if (data.name === userName) {
                 item.className = 'my-msg';
                 item.innerHTML = `${readHtml}${content}`;
@@ -457,12 +502,18 @@
                 item.innerHTML = `<strong>${data.name}</strong><br>${content}${readHtml}`;
             }
 
+            // --- 4. 우클릭 메뉴 설정 ---
             item.oncontextmenu = (e) => {
                 e.preventDefault();
-                selectedId = data.id; selectedSender = data.name; selectedText = (data.type === 'text') ? data.text : '[파일]';
+                selectedId = data.id;
+                selectedSender = data.name;
+                selectedText = (data.type === 'text') ? data.text : '[파일]';
                 const menu = document.getElementById('context-menu');
-                menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
+                menu.style.display = 'block';
+                menu.style.left = e.clientX + 'px';
+                menu.style.top = e.clientY + 'px';
             };
+
             list.appendChild(item);
             list.scrollTop = list.scrollHeight;
         }
