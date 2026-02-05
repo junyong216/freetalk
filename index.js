@@ -25,6 +25,7 @@ db.serialize(() => {
         read_count INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_room ON messages (room)`);
     db.run(`ALTER TABLE messages ADD COLUMN read_count INTEGER DEFAULT 0`, (err) => { });
 });
 

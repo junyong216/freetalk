@@ -441,19 +441,13 @@
 
         // 소켓 이벤트들
         socket.on('load messages', (messages) => {
-            document.getElementById('list-area').style.display = 'none';
-            document.getElementById('chat-area').style.display = 'flex';
-
-            // ✅ 채팅방 들어올 때 메인 아이콘 두 개를 완전히 숨김
-            document.getElementById('main-install-btn').style.display = 'none';
-            document.getElementById('main-settings-btn').style.display = 'none';
-
-            document.getElementById('room-title').textContent = currentRoom;
-            document.getElementById('messages').innerHTML = '';
+            // 이미 화면 전환은 위에서 했으니 메시지만 쏙 넣어줍니다.
+            const messageList = document.getElementById('messages');
+            messageList.innerHTML = '';
             if (messages) messages.forEach(addMessage);
             socket.emit('mark as read');
         });
-
+        
         socket.on('chat message', (data) => {
             addMessage(data);
             if (data.name !== userName) {
@@ -502,7 +496,18 @@
         function enterRoom(roomName) {
             const nick = prompt("닉네임:");
             if (!nick) return;
-            userName = nick; currentRoom = roomName;
+
+            userName = nick;
+            currentRoom = roomName;
+
+            // 🏎️ 서버 응답 기다리지 않고 일단 화면부터 전환!
+            document.getElementById('list-area').style.display = 'none';
+            document.getElementById('chat-area').style.display = 'flex';
+            document.getElementById('main-install-btn').style.display = 'none';
+            document.getElementById('main-settings-btn').style.display = 'none';
+            document.getElementById('room-title').textContent = currentRoom;
+            document.getElementById('messages').innerHTML = '로딩 중...'; // 사용자에게 알려주기
+
             socket.emit('join room', { room: roomName, name: nick });
         }
 
