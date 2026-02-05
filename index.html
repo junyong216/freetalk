@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
     <title>프리톡 (Free Talk)</title>
+    <link rel="icon" href="프리톡로고.png" type="image/png">
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
@@ -22,8 +23,6 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
         }
 
         .room-container {
@@ -34,13 +33,6 @@
             width: 380px;
             max-width: 95%;
             text-align: center;
-        }
-
-        #room-list {
-            margin: 20px 0;
-            border-top: 1px solid #eee;
-            max-height: 300px;
-            overflow-y: auto;
         }
 
         .room-item {
@@ -63,16 +55,6 @@
             background: #f0f2f5;
         }
 
-        .chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            padding: 15px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            z-index: 10;
-        }
-
         #messages {
             flex: 1;
             overflow-y: auto;
@@ -80,7 +62,6 @@
             flex-direction: column;
             gap: 12px;
             padding: 20px;
-            margin: 0;
             list-style: none;
             padding-bottom: 120px;
         }
@@ -123,13 +104,11 @@
             gap: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             z-index: 100;
-            transition: all 0.2s;
         }
 
         #form.dragover {
             background: #e1e7ff;
             border: 2px dashed #6e8efb;
-            transform: translateX(-50%) scale(1.02);
         }
 
         #input {
@@ -139,6 +118,7 @@
             background: transparent;
         }
 
+        /* ⭐️ 설정 버튼 스타일 복구 */
         #main-settings-btn {
             position: fixed;
             top: 15px;
@@ -186,13 +166,14 @@
     </div>
 
     <div id="chat-area">
-        <div class="chat-header">
+        <div
+            style="display:flex; justify-content:space-between; align-items:center; background:white; padding:15px; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
             <div style="display:flex; align-items:center; gap:10px;">
                 <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem;">⬅️</span>
                 <div id="room-title" style="font-weight:bold;"></div>
             </div>
             <button onclick="leaveChat()"
-                style="background:#ff4d4d; color:white; border:none; padding:7px 15px; border-radius:8px; font-weight:bold; cursor:pointer;">방
+                style="background:#ff4d4d; color:white; border:none; padding:7px 15px; border-radius:8px; font-weight:bold;">방
                 나가기</button>
         </div>
         <ul id="messages"></ul>
@@ -200,9 +181,9 @@
             <input type="file" id="file-input" style="display:none;" onchange="uploadFile(this)">
             <button type="button" style="background:none; border:none; font-size:1.2rem; cursor:pointer;"
                 onclick="document.getElementById('file-input').click()">📎</button>
-            <input id="input" autocomplete="off" placeholder="메시지 또는 파일을 끌어오세요..." />
+            <input id="input" autocomplete="off" placeholder="메시지를 입력하세요..." />
             <button type="submit"
-                style="background:#6e8efb; color:white; border:none; padding:10px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">전송</button>
+                style="background:#6e8efb; color:white; border:none; padding:10px 20px; border-radius:20px; font-weight:bold;">전송</button>
         </form>
     </div>
 
@@ -216,7 +197,7 @@
         const socket = io();
         let userName = '', currentRoom = '';
 
-        // 드래그 앤 드롭 리스너
+        // 드래그 앤 드롭
         const chatForm = document.getElementById('form');
         chatForm.addEventListener('dragover', (e) => { e.preventDefault(); chatForm.classList.add('dragover'); });
         chatForm.addEventListener('dragleave', () => { chatForm.classList.remove('dragover'); });
@@ -277,7 +258,7 @@
             e.preventDefault();
             const input = document.getElementById('input');
             if (input.value.trim() && currentRoom) {
-                socket.emit('chat message', { room: currentRoom, name: userName, text: input.value, type: 'text' });
+                socket.emit('chat message', { room: currentRoom, name: userName, text: input.value });
                 input.value = '';
             }
         });
@@ -287,10 +268,7 @@
             if (file && currentRoom) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    socket.emit('chat message', {
-                        room: currentRoom, name: userName, text: e.target.result,
-                        type: file.type.startsWith('image/') ? 'image' : 'text'
-                    });
+                    socket.emit('chat message', { room: currentRoom, name: userName, text: e.target.result, type: 'image' });
                 };
                 reader.readAsDataURL(file);
             }
@@ -307,26 +285,14 @@
             socket.emit('join room', { room: roomName, name: userName });
         }
 
-        // index.html 내 <script> 부분의 함수들
-
         function goBack() {
-            // ⭐️ socket.emit('leave room')을 여기서 지웁니다! 
-            // 그냥 화면만 가리는 겁니다. 연결은 살아있어야 합니다.
-
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
             document.getElementById('footer-bar').style.display = 'block';
             document.getElementById('main-settings-btn').style.display = 'flex';
         }
 
-        function leaveChat() {
-            // ⭐️ "방 나가기" 버튼을 눌렀을 때만 진짜로 나갑니다.
-            if (confirm("이 방에서 완전히 나갈까요? (입장 메시지가 다시 뜰 수 있습니다)")) {
-                socket.emit('leave room'); // 진짜 나갈 때만 서버에 알림
-                currentRoom = '';
-                goBack();
-            }
-        }
+        function leaveChat() { if (confirm("나갈까요?")) { socket.emit('leave room'); currentRoom = ''; goBack(); } }
         function createNewRoom() { const val = document.getElementById('new-room-input').value; if (val) enterRoom(val); }
     </script>
 </body>
