@@ -303,13 +303,24 @@
         }
 
         function enterRoom(roomName) {
-            if (!userName) { userName = prompt("닉네임:"); if (!userName) return; }
+            if (!userName) {
+                userName = prompt("닉네임:");
+                if (!userName) return;
+            }
+
+            // ⭐️ [핵심] 방에 들어가기 전, 기존 화면에 그려진 메시지들을 싹 지웁니다.
+            // 이 코드가 없으면 이전 방 대화 내용 밑에 새 방 대화가 붙어서 보입니다.
+            const list = document.getElementById('messages');
+            list.innerHTML = '';
+
             currentRoom = roomName;
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
             document.getElementById('footer-bar').style.display = 'none';
             document.getElementById('main-settings-btn').style.display = 'none';
             document.getElementById('room-title').textContent = roomName;
+
+            // 서버에 나 지금 이 방 데이터 필요하다고 요청
             socket.emit('join room', { room: roomName, name: userName });
         }
 
