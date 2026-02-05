@@ -2,7 +2,7 @@
 <html lang="ko">
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta charset="UTF-8">
     <title>프리톡 (Free Talk)</title>
 
@@ -18,13 +18,15 @@
             font-family: 'Pretendard', sans-serif;
             margin: 0;
             background-color: #f0f2f5;
-            overflow-x: hidden;
-            /* 가로 스크롤이 생기는 걸 원천 차단합니다 */
 
-            /* 박스 크기 계산법을 변경해서 패딩 때문에 커지는 걸 막습니다 */
+            /* [수정] hidden을 제거하고 auto로 변경 */
+            overflow-y: auto;
+
+            /* [추가] 모바일에서 스크롤을 부드럽게 하고 탄성을 줍니다 */
+            -webkit-overflow-scrolling: touch;
+
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column;
             min-height: 100vh;
         }
 
@@ -33,7 +35,10 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+
+            /* [수정] 고정 높이 대신 최소 높이로 변경해서 내용이 많아지면 스크롤되게 합니다 */
+            min-height: 100vh;
+            padding: 20px 0;
         }
 
         .room-container {
