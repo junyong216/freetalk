@@ -20,12 +20,12 @@
             background-color: #f0f2f5;
             display: flex;
             flex-direction: column;
-            height: 100vh; /* 화면 높이 고정 */
-            overflow: hidden; /* 기본 스크롤 차단 */
+            height: 100vh;
+            overflow: hidden;
             transition: background-color 0.3s;
         }
 
-        /* 설정 버튼 (⚙️) 커스텀 */
+        /* 설정 버튼 */
         .settings-btn {
             position: fixed;
             top: 20px;
@@ -43,9 +43,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             transition: all 0.2s;
         }
-        .settings-btn:hover { transform: rotate(45deg); scale: 1.1; }
 
-        /* 메인 화면 중앙 정렬 */
         #list-area {
             flex: 1;
             display: flex;
@@ -62,7 +60,6 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             width: 380px;
             max-width: 95%;
-            box-sizing: border-box;
             text-align: center;
         }
 
@@ -77,17 +74,9 @@
             justify-content: space-between;
             align-items: center;
             font-weight: bold;
-            transition: transform 0.2s;
         }
-        .room-item:active { transform: scale(0.98); }
 
-        /* 채팅 영역 */
-        #chat-area {
-            display: none;
-            flex-direction: column;
-            height: 100vh;
-            background: #f0f2f5;
-        }
+        #chat-area { display: none; flex-direction: column; height: 100vh; background: #f0f2f5; }
 
         #messages {
             flex: 1;
@@ -101,74 +90,34 @@
             padding-bottom: 100px;
         }
 
-        #messages li {
-            padding: 10px 15px;
-            border-radius: 18px;
-            max-width: 75%;
-            word-wrap: break-word;
-            font-size: 0.95rem;
-            position: relative;
-        }
-
+        #messages li { padding: 10px 15px; border-radius: 18px; max-width: 75%; word-wrap: break-word; font-size: 0.95rem; position: relative; }
         .my-msg { align-self: flex-end; background: #a29bfe; color: white; border-bottom-right-radius: 2px; }
         .other-msg { align-self: flex-start; background: white; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
-        /* 하단 입력창 */
         #form {
-            position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 92%;
-            max-width: 500px;
-            background: white;
-            padding: 8px 15px;
-            border-radius: 35px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-            z-index: 1000;
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 92%; max-width: 500px; background: white; padding: 8px 15px;
+            border-radius: 35px; display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15); z-index: 1000;
         }
 
         #input { flex: 1; border: none; outline: none; padding: 10px; font-size: 1rem; }
 
-        /* 테마 설정 모달 */
         #settings-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px;
-            background: white;
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            z-index: 3000;
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; background: white; padding: 25px; border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 3000;
         }
 
-        /* 다크모드 대응 */
+        /* 다크모드 */
         body.dark-mode { background-color: #1a1a1a; }
-        body.dark-mode .room-container, body.dark-mode #settings-modal, body.dark-mode #form { background: #2d2d2d; color: white; }
+        body.dark-mode .room-container, body.dark-mode #settings-modal, body.dark-mode #form, body.dark-mode #chat-area { background: #2d2d2d; color: white; }
         body.dark-mode .settings-btn { background: #333; color: white; }
         body.dark-mode .other-msg { background: #3d3d3d; color: white; }
         body.dark-mode #input { background: transparent; color: white; }
-        body.dark-mode #footer-bar { background: #1a1a1a; color: #888; border-top: 1px solid #333; }
 
-        #footer-bar {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: white;
-            padding: 8px 0;
-            text-align: center;
-            font-size: 0.75rem;
-            color: #666;
-            z-index: 500;
-        }
-
-        #context-menu { display: none; position: fixed; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 5000; overflow: hidden; }
+        #footer-bar { position: fixed; bottom: 0; width: 100%; background: white; padding: 8px 0; text-align: center; font-size: 0.75rem; color: #666; z-index: 500; }
+        #context-menu { display: none; position: fixed; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 5000; }
         #context-menu div { padding: 12px 20px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #333; }
     </style>
 </head>
@@ -187,10 +136,6 @@
                 <option value="purple">보라 감성</option>
             </select>
         </div>
-        <div style="margin: 20px 0; display:flex; justify-content:space-between; align-items:center;">
-            <label>🔔 푸시 알림</label>
-            <input type="checkbox" id="noti-toggle" onchange="toggleNotification()" style="width:22px; height:22px;">
-        </div>
         <button onclick="toggleSettings()" style="width:100%; padding:12px; background:#6e8efb; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold;">닫기</button>
     </div>
 
@@ -206,33 +151,26 @@
     </div>
 
     <div id="chat-area">
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.05); z-index:10;">
-            <div id="room-title" style="font-weight:bold; font-size:1.1rem; color:#333;"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 20px; background:white; box-shadow:0 2px 10px rgba(0,0,0,0.05); z-index:10; color: #333;">
+            <div id="room-title" style="font-weight:bold; font-size:1.1rem;"></div>
             <button onclick="leaveChat()" style="background:#ff4d4d; color:white; border:none; padding:7px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">나가기</button>
         </div>
         <ul id="messages"></ul>
         <form id="form">
-            <input type="file" id="file-input" style="display:none;" onchange="uploadFile(this)">
-            <button type="button" style="background:none; border:none; font-size:1.3rem; cursor:pointer;" onclick="document.getElementById('file-input').click()">📎</button>
             <input id="input" autocomplete="off" placeholder="메시지를 입력하세요..." />
             <button type="submit" style="background:#6e8efb; color:white; border:none; width:40px; height:40px; border-radius:50%; cursor:pointer;">▲</button>
         </form>
     </div>
 
     <div id="footer-bar">
-        문의 <strong>제이투코어(J2CORE)</strong> 대표 <strong>정준용</strong> | <a href="mailto:jjyong3872@naver.com" style="color:#0984e3; text-decoration:none; font-weight:bold;">jjyong3872@naver.com</a>
-    </div>
-
-    <div id="context-menu">
-        <div onclick="setAsNotice()">📌 공지 등록</div>
-        <div onclick="handleReply()">↩️ 답장</div>
-        <div onclick="handleDelete()" style="color:red;">🗑️ 삭제</div>
+        문의 <strong>제이투코어</strong> 정준용 | <a href="mailto:jjyong3872@naver.com" style="color:#0984e3; text-decoration:none;">jjyong3872@naver.com</a>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let userName = '', currentRoom = '', selectedId = null, selectedText = '';
+        let userName = localStorage.getItem('ft_userName') || '';
+        let currentRoom = localStorage.getItem('ft_currentRoom') || '';
 
         function toggleSettings() {
             const modal = document.getElementById('settings-modal');
@@ -243,52 +181,44 @@
             const theme = document.getElementById('theme-select').value;
             document.body.classList.remove('dark-mode', 'purple-mode');
             if (theme === 'dark') document.body.classList.add('dark-mode');
-            else if (theme === 'purple') document.body.classList.add('purple-mode');
             localStorage.setItem('freeTalkTheme', theme);
         }
-
-        function toggleNotification() {
-            if (document.getElementById('noti-toggle').checked) {
-                Notification.requestPermission();
-            }
-        }
-
-        socket.on('chat message', (data) => {
-            addMessage(data);
-            if (data.name !== userName) {
-                if (document.getElementById('noti-toggle').checked) {
-                    new Notification(`프리톡: ${data.name}`, { body: data.text });
-                }
-            }
-        });
 
         function addMessage(data) {
             const list = document.getElementById('messages');
             const item = document.createElement('li');
-            item.id = `msg-${data.id}`;
             item.className = data.name === userName ? 'my-msg' : 'other-msg';
             item.innerHTML = `<strong>${data.name}</strong><br>${data.text}`;
-            item.oncontextmenu = (e) => {
-                e.preventDefault();
-                selectedId = data.id; selectedText = data.text;
-                const menu = document.getElementById('context-menu');
-                menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
-            };
             list.appendChild(item);
             list.scrollTop = list.scrollHeight;
         }
 
+        // 방 입장 (닉네임 저장 추가)
         function enterRoom(roomName) {
-            const nick = prompt("닉네임:");
-            if (!nick) return;
-            userName = nick; currentRoom = roomName;
-            socket.emit('join room', { room: roomName, name: nick });
+            if (!userName) {
+                const nick = prompt("닉네임을 입력해주세요:");
+                if (!nick) return;
+                userName = nick;
+                localStorage.setItem('ft_userName', nick);
+            }
+            currentRoom = roomName;
+            localStorage.setItem('ft_currentRoom', roomName);
+            socket.emit('join room', { room: roomName, name: userName });
         }
 
         function createNewRoom() {
             const name = document.getElementById('new-room-input').value;
             if (name) enterRoom(name);
         }
+
+        function leaveChat() {
+            localStorage.removeItem('ft_currentRoom');
+            location.reload();
+        }
+
+        socket.on('chat message', (data) => {
+            addMessage(data);
+        });
 
         socket.on('load messages', (messages) => {
             document.getElementById('list-area').style.display = 'none';
@@ -313,20 +243,24 @@
         document.getElementById('form').addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('input');
-            if (input.value.trim()) {
+            if (input.value.trim() && currentRoom) {
                 socket.emit('chat message', { room: currentRoom, name: userName, text: input.value });
                 input.value = '';
             }
         });
 
-        function leaveChat() { location.reload(); }
-        window.onclick = () => { document.getElementById('context-menu').style.display = 'none'; };
-
+        // 🚀 핵심: 페이지 로드 시 기존 접속 정보가 있으면 자동 재접속
         window.onload = () => {
+            // 테마 복구
             const savedTheme = localStorage.getItem('freeTalkTheme');
             if (savedTheme) {
                 document.getElementById('theme-select').value = savedTheme;
                 changeTheme();
+            }
+
+            // 자동 입장
+            if (userName && currentRoom) {
+                socket.emit('join room', { room: currentRoom, name: userName });
             }
         };
     </script>
