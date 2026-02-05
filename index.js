@@ -15,6 +15,7 @@ const allRooms = new Set(["자유 대화방", "정보 공유방", "비밀 대화
 const roomPasswords = {};
 
 db.serialize(() => {
+    // 1. 테이블 생성
     db.run(`CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         room TEXT,
@@ -25,21 +26,31 @@ db.serialize(() => {
         read_count INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+
+    // 2. 인덱스 생성
     db.run(`CREATE INDEX IF NOT EXISTS idx_room ON messages (room)`);
-    // read_count 컬럼 없을 경우 대비
-    db.run(`ALTER TABLE messages ADD COLUMN read_count INTEGER DEFAULT 0`, (err) => { });
+
+    // 3. 컬럼 추가 (에러가 나도 서버가 죽지 않도록 콜백에서 에러 무시)
+    db.run(`ALTER TABLE messages ADD COLUMN read_count INTEGER DEFAULT 0`, (err) => {
+        if (err) {
+            // 이미 컬럼이 있는 경우 에러가 나는데, 그냥 무시하고 진행합니다.
+            console.log("read_count 컬럼이 이미 존재하거나 생성할 수 없습니다. (정상)");
+        }
+    });
 });
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
 
 function sendRoomCounts() {
-    const roomCounts = {};
-    const rooms = io.sockets.adapter.rooms;
-    allRooms.forEach(roomName => {
-        const room = rooms.get(roomName);
-        roomCounts[roomName] = room ? room.size : 0;
-    });
-    io.emit('room counts', { roomCounts, roomPasswords: Object.keys(roomPasswords) });
+    try {
+        const roomCounts = {};
+        const rooms = io.sockets.adapter.rooms;
+        allRooms.forEach(roomName => {
+            const room = rooms.get(roomName);
+            roomCounts[roomName] = room ? room.size : 0;
+        });
+        io.emit('room counts', { roomCounts, roomPasswords: Object.keys(roomPasswords) });
+    } catch (e) { console.error("Room count error:", e); }
 }
 
 io.on('connection', (socket) => {
@@ -51,59 +62,45 @@ io.on('connection', (socket) => {
         }
         allRooms.add(data.room);
         if (data.password && !roomPasswords[data.room]) roomPasswords[data.room] = data.password;
-
+        
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
 
-        // 1. 과거 메시지 로드
+        // 과거 메시지 로드 (에러 방지 쿼리)
         db.all("SELECT id, name, text, type, read_count, likes, strftime('%H:%M', created_at, 'localtime') as time FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 50", [data.room], (err, rows) => {
             if (!err) socket.emit('load messages', rows);
         });
 
-        // 2. 입장 알림 전송 (type: 'system')
+        // 입장 알림
         io.to(data.room).emit('chat message', {
             id: Date.now(),
             name: '시스템',
             text: `${data.name}님이 입장했습니다.`,
-            type: 'system',
-            time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+            type: 'system'
         });
 
         sendRoomCounts();
     });
 
-    socket.on('mark as read', () => {
-        if (socket.room) {
-            db.run("UPDATE messages SET read_count = 0 WHERE room = ? AND name != ?", [socket.room, socket.userName], (err) => {
-                if (!err) io.to(socket.room).emit('all read');
-            });
-        }
-    });
-
     socket.on('chat message', (data) => {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
         const roomMembers = io.sockets.adapter.rooms.get(data.room);
         const countInRoom = (roomMembers && roomMembers.size > 1) ? 0 : 1;
-
+        
         db.run("INSERT INTO messages (room, name, text, type, read_count) VALUES (?, ?, ?, ?, ?)",
             [data.room, data.name, data.text, data.type || 'text', countInRoom], function (err) {
                 if (!err) {
                     io.to(data.room).emit('chat message', {
-                        id: this.lastID, ...data, time: timeString, read_count: countInRoom, likes: 0
+                        id: this.lastID, 
+                        ...data, 
+                        read_count: countInRoom, 
+                        likes: 0,
+                        time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
                     });
                 }
             });
     });
 
-    socket.on('delete message', (id) => {
-        db.run("DELETE FROM messages WHERE id = ?", [id], (err) => {
-            if (!err) io.to(socket.room).emit('message deleted', id);
-        });
-    });
-
-    s// [서버] leave room 이벤트만 알림을 쏘도록 유지
     socket.on('leave room', () => {
         if (socket.room) {
             const r = socket.room;
@@ -111,9 +108,8 @@ io.on('connection', (socket) => {
             io.to(r).emit('chat message', {
                 id: Date.now(),
                 name: '시스템',
-                text: `${n}님이 퇴장했습니다.`, // 명시적으로 버튼 눌렀을 때만 알림
-                type: 'system',
-                time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+                text: `${n}님이 퇴장했습니다.`,
+                type: 'system'
             });
             socket.leave(r);
             socket.room = null;
@@ -121,11 +117,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // [서버] disconnect(새로고침, 탭 닫기) 시에는 알림을 뺄지 말지 선택
-    socket.on('disconnect', () => {
-        // 만약 새로고침할 때도 퇴장 알림을 안 주고 싶다면 이 안의 알림 로직을 지우세요.
-        sendRoomCounts();
-    });
+    socket.on('disconnect', () => { sendRoomCounts(); });
 });
 
-server.listen(3000, () => { console.log('http://localhost:3000'); });
+server.listen(3000, () => { console.log('Server is running on port 3000'); });
