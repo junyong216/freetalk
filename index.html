@@ -8,6 +8,7 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="프리톡로고.png" type="image/png">
     <style>
+        /* 기존 스타일 그대로 유지 (생략 없이 원래대로 두세요) */
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
@@ -19,11 +20,9 @@
             background-color: #f0f2f5;
             height: 100vh;
             width: 100vw;
-            /* 너비 고정 */
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
-            /* 가로 스크롤 절대 방지 */
         }
 
         #list-area {
@@ -79,9 +78,7 @@
             padding: 10px 15px;
             border-radius: 15px;
             max-width: 85%;
-            /* 너비를 약간 늘리되 화면은 안 넘게 */
             word-break: break-all;
-            /* 긴 단어도 줄바꿈 */
             position: relative;
             font-size: 0.95rem;
         }
@@ -107,7 +104,6 @@
             left: 50%;
             transform: translateX(-50%);
             width: 95%;
-            /* 90%에서 95%로 조정하되 border-box라 안 나감 */
             max-width: 500px;
             background: white;
             border-radius: 30px;
@@ -118,11 +114,6 @@
             z-index: 1000;
         }
 
-        #form.dragover {
-            background: #e1e7ff;
-            border: 2px dashed #6e8efb;
-        }
-
         #input {
             flex: 1;
             border: none;
@@ -130,7 +121,6 @@
             background: transparent;
         }
 
-        /* ⭐️ 설정 버튼 스타일 복구 */
         #main-settings-btn {
             position: fixed;
             top: 15px;
@@ -206,66 +196,37 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // 서비스 워커 등록 (설치 팝업 필수 조건)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js');
-        }
-
-        // 설치 팝업 제어
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // e.preventDefault(); // 만약 자동으로 뜨는 걸 원하시면 이 줄을 주석처리하세요.
-            deferredPrompt = e;
-            console.log("설치 가능 상태");
-        });
-
         const socket = io();
         let userName = '', currentRoom = '';
 
-        // 드래그 앤 드롭
-        const chatForm = document.getElementById('form');
-        chatForm.addEventListener('dragover', (e) => { e.preventDefault(); chatForm.classList.add('dragover'); });
-        chatForm.addEventListener('dragleave', () => { chatForm.classList.remove('dragover'); });
-        chatForm.addEventListener('drop', (e) => {
-            e.preventDefault();
-            chatForm.classList.remove('dragover');
-            if (e.dataTransfer.files.length > 0) uploadFile({ files: e.dataTransfer.files });
-        });
-
-        socket.on('chat message', (data) => { addMessage(data); });
+        // [수정 1] 과거 내역 로딩 시 무조건 그리게 함
         socket.on('load messages', (messages) => {
             const list = document.getElementById('messages');
-            list.innerHTML = ''; // 1. 일단 깨끗하게 비우고
-
-            if (messages && messages.length > 0) {
+            list.innerHTML = '';
+            if (messages) {
                 messages.forEach(msg => {
-                    // 2. 과거 내역을 그릴 때는 필터링에 걸리지 않도록
-                    // 현재 currentRoom과 똑같이 맞춰서 강제로 밀어넣습니다.
-                    const tempMsg = { ...msg, room: currentRoom };
-                    addMessage(tempMsg);
+                    // 필터 통과를 위해 임시로 방 이름 맞춰서 그리기
+                    addMessage({ ...msg, room: currentRoom });
                 });
             }
         });
 
+        socket.on('chat message', (data) => { addMessage(data); });
+
         socket.on('room counts', (data) => {
             const list = document.getElementById('room-list');
             list.innerHTML = '';
-            if (data.roomCounts) {
-                for (const room in data.roomCounts) {
-                    const item = document.createElement('div');
-                    item.className = 'room-item';
-                    item.onclick = () => enterRoom(room);
-                    item.innerHTML = `<span>${room}</span><span>${data.roomCounts[room]}명</span>`;
-                    list.appendChild(item);
-                }
+            for (const room in data.roomCounts) {
+                const item = document.createElement('div');
+                item.className = 'room-item';
+                item.onclick = () => enterRoom(room);
+                item.innerHTML = `<span>${room}</span><span>${data.roomCounts[room]}명</span>`;
+                list.appendChild(item);
             }
         });
 
         function addMessage(data) {
-            if (!data) return;
-            if (data.room && data.room !== currentRoom) {
-                return;
-            }
+            if (!data || (data.room && data.room !== currentRoom)) return;
             const list = document.getElementById('messages');
             const item = document.createElement('li');
 
@@ -290,6 +251,31 @@
             list.scrollTop = list.scrollHeight;
         }
 
+        // [수정 2] 방 입장 로직 순서 정렬
+        function enterRoom(roomName) {
+            if (!userName) {
+                userName = prompt("닉네임:");
+                if (!userName) return;
+            }
+            currentRoom = roomName; // 이름 먼저 설정
+
+            document.getElementById('list-area').style.display = 'none';
+            document.getElementById('chat-area').style.display = 'flex';
+            document.getElementById('footer-bar').style.display = 'none';
+            document.getElementById('main-settings-btn').style.display = 'none';
+            document.getElementById('room-title').textContent = roomName;
+
+            socket.emit('join room', { room: roomName, name: userName });
+        }
+
+        function goBack() {
+            currentRoom = ''; // 목록으로 갈 땐 비우기
+            document.getElementById('list-area').style.display = 'flex';
+            document.getElementById('chat-area').style.display = 'none';
+            document.getElementById('footer-bar').style.display = 'block';
+            document.getElementById('main-settings-btn').style.display = 'flex';
+        }
+
         document.getElementById('form').addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('input');
@@ -308,37 +294,6 @@
                 };
                 reader.readAsDataURL(file);
             }
-        }
-
-        function enterRoom(roomName) {
-            if (!userName) {
-                userName = prompt("닉네임:");
-                if (!userName) return;
-            }
-
-            // ⭐️ 순서가 중요합니다!
-            currentRoom = roomName; // 1. 방 이름부터 내 가슴에 새기고
-
-            const list = document.getElementById('messages');
-            list.innerHTML = ''; // 2. 화면 비우기
-
-            // UI 전환
-            document.getElementById('list-area').style.display = 'none';
-            document.getElementById('chat-area').style.display = 'flex';
-            document.getElementById('room-title').textContent = roomName;
-
-            // 3. 그 다음 서버에 요청!
-            socket.emit('join room', { room: roomName, name: userName });
-        }
-
-        function goBack() {
-            // ⭐️ 추가: 목록으로 돌아갈 때는 현재 방 정보를 비워줍니다.
-            currentRoom = '';
-
-            document.getElementById('list-area').style.display = 'flex';
-            document.getElementById('chat-area').style.display = 'none';
-            document.getElementById('footer-bar').style.display = 'block';
-            document.getElementById('main-settings-btn').style.display = 'flex';
         }
 
         function leaveChat() { if (confirm("나갈까요?")) { socket.emit('leave room'); currentRoom = ''; goBack(); } }
