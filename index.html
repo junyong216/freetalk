@@ -182,7 +182,6 @@
             outline: none;
         }
 
-        /* 푸터 스타일 보강 */
         #footer-bar {
             position: fixed;
             bottom: 0;
@@ -324,9 +323,21 @@
         let userName = '', currentRoom = '', selectedId = null, selectedText = '';
         let deferredPrompt;
 
-        // PWA 설치 로직
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('main-install-btn').style.display = 'block'; });
-        function installApp() { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('main-install-btn').style.display = 'none'; }); } }
+        window.addEventListener('beforeinstallprompt', (e) => { 
+            e.preventDefault(); 
+            deferredPrompt = e; 
+            document.getElementById('main-install-btn').style.display = 'block'; 
+        });
+
+        function installApp() { 
+            if (deferredPrompt) { 
+                deferredPrompt.prompt(); 
+                deferredPrompt.userChoice.then(() => { 
+                    deferredPrompt = null; 
+                    document.getElementById('main-install-btn').style.display = 'none'; 
+                }); 
+            } 
+        }
 
         function enterRoom(roomName) {
             if (!userName) {
@@ -335,7 +346,7 @@
                 userName = nick;
             }
 
-            // 이미 이 방에 접속 중인 상태라면 화면만 전환
+            // 1. 이미 접속한 방이면 서버 신호 없이 화면만 전환
             if (currentRoom === roomName) {
                 document.getElementById('list-area').style.display = 'none';
                 document.getElementById('chat-area').style.display = 'flex';
@@ -346,6 +357,8 @@
             }
 
             currentRoom = roomName;
+
+            // 2. UI 숨기기 (설정 버튼 등 상단 바 요소 제거)
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
             document.getElementById('footer-bar').style.display = 'none';
@@ -359,24 +372,23 @@
         }
 
         function goBack() {
-            // 퇴장(leave room) 신호를 보내지 않고 화면만 전환합니다.
+            // 퇴장 신호 안 보냄! 화면만 전환해서 연결 유지
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
 
-            // 메인 UI 복구
+            // 메인 화면 UI 복구 (설정 버튼 다시 나옴)
             document.getElementById('footer-bar').style.display = 'block';
             document.getElementById('main-settings-btn').style.display = 'block';
             if (deferredPrompt) {
                 document.getElementById('main-install-btn').style.display = 'block';
             }
-            // currentRoom은 유지합니다 (나중에 다시 들어올 때 입장 메시지 방지)
         }
 
         function leaveChat() {
             if (confirm("완전히 나갈까요? (대화방 퇴장)")) {
-                socket.emit('leave room'); // 여기서만 진짜 퇴장 신호를 보냅니다.
-                currentRoom = ''; // 참여 방 정보 초기화
-                location.reload(); // 초기 상태로 복구
+                socket.emit('leave room'); // 여기서만 진짜 퇴장 시스템 메시지 발생
+                currentRoom = ''; 
+                location.reload(); // 앱 초기화
             }
         }
 
@@ -450,14 +462,26 @@
             }
         });
 
-        function goBack() { location.reload(); }
-        function createNewRoom() { const input = document.getElementById('new-room-input'); if (input.value.trim()) enterRoom(input.value.trim()); }
-        function toggleSettings() { const m = document.getElementById('settings-modal'); m.style.display = m.style.display === 'none' ? 'block' : 'none'; }
-        function changeTheme() { const t = document.getElementById('theme-select').value; document.body.classList.toggle('dark-mode', t === 'dark'); }
-        function openImageViewer(src) { document.getElementById('image-modal').style.display = 'flex'; document.getElementById('modal-img').src = src; }
-        function handleShare() { navigator.clipboard.writeText(selectedText).then(() => alert("복사되었습니다.")); }
+        function createNewRoom() { 
+            const input = document.getElementById('new-room-input'); 
+            if (input.value.trim()) enterRoom(input.value.trim()); 
+        }
+        function toggleSettings() { 
+            const m = document.getElementById('settings-modal'); 
+            m.style.display = m.style.display === 'none' ? 'block' : 'none'; 
+        }
+        function changeTheme() { 
+            const t = document.getElementById('theme-select').value; 
+            document.body.classList.toggle('dark-mode', t === 'dark'); 
+        }
+        function openImageViewer(src) { 
+            document.getElementById('image-modal').style.display = 'flex'; 
+            document.getElementById('modal-img').src = src; 
+        }
+        function handleShare() { 
+            navigator.clipboard.writeText(selectedText).then(() => alert("복사되었습니다.")); 
+        }
         window.onclick = () => document.getElementById('context-menu').style.display = 'none';
     </script>
 </body>
-
 </html>
