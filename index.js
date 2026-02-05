@@ -53,13 +53,13 @@ io.on('connection', (socket) => {
 
         // 3. 해당 방 메시지 불러오기
         const loadQuery = `
-            SELECT id, name, text, type, fileName, room, read_count, 
-            strftime('%H:%M', created_at, 'localtime') as time 
-            FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100
+        SELECT id, name, text, type, fileName, room, read_count, 
+        strftime('%H:%M', created_at, 'localtime') as time 
+        FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100
         `;
 
         db.all(loadQuery, [data.room], (err, rows) => {
-            if (!err) socket.emit('load messages', rows);
+            if (!err) socket.emit('load messages', rows); // 클라이언트로 전송
         });
 
         // 4. 시스템 메시지 (정말 '처음' 들어왔을 때만 보냄)
