@@ -335,12 +335,25 @@
                 userName = nick;
             }
             currentRoom = roomName;
+
+            // 1. 화면 전환
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
-            document.getElementById('footer-bar').style.display = 'none'; // 채팅중엔 푸터 숨김
+
+            // 2. 상단바 및 하단바 숨기기 (핵심)
+            document.getElementById('footer-bar').style.display = 'none';
+            document.getElementById('main-settings-btn').style.display = 'none'; // 설정 버튼 숨김
+            document.getElementById('main-install-btn').style.display = 'none'; // 설치 버튼 숨김
+
             document.getElementById('room-title').textContent = currentRoom;
             document.getElementById('messages').innerHTML = '<li id="loading-status" style="text-align:center; width:100%; color:gray;">메시지 로딩 중...</li>';
+
             socket.emit('join room', { room: roomName, name: userName });
+        }
+
+        // 뒤로 가기나 새로고침 시 설정 버튼이 다시 보여야 하므로 goBack 수정
+        function goBack() {
+            location.reload(); // 페이지를 새로고침하면 초기 상태(설정 버튼 보임)로 돌아갑니다.
         }
 
         function addMessage(data) {
