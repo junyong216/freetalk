@@ -11,10 +11,10 @@
             font-family: 'Pretendard', sans-serif;
             margin: 0;
             background-color: #f0f2f5;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            overscroll-behavior-y: contain;
+            overflow: hidden;
         }
 
         #list-area {
@@ -22,7 +22,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            flex: 1;
+            height: 100vh;
             padding: 20px;
             box-sizing: border-box;
         }
@@ -34,18 +34,16 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             width: 380px;
             max-width: 95%;
-            box-sizing: border-box;
             text-align: center;
-            max-height: 80vh;
             display: flex;
             flex-direction: column;
         }
 
         #room-list {
-            flex: 1;
-            overflow-y: auto;
             margin: 20px 0;
             border-top: 1px solid #eee;
+            max-height: 300px;
+            overflow-y: auto;
         }
 
         .room-item {
@@ -61,53 +59,44 @@
             font-weight: bold;
         }
 
+        #chat-area {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            background: #f0f2f5;
+            position: relative;
+        }
+
         .chat-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: white;
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 5px;
+            padding: 15px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-        }
-
-        #chat-area {
-            display: none;
-            flex-direction: column;
-            height: 100vh;
-            /* 브라우저 전체 높이 고정 */
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box;
-            overflow: hidden;
-            /* 영역 밖으로 나가는 것 방지 */
+            z-index: 10;
         }
 
         #messages {
-            list-style: none;
-            padding: 10px;
-            margin: 0;
             flex: 1;
-            /* 채팅창이 전체 공간을 차지하게 함 */
             overflow-y: auto;
-            /* 메시지 많아지면 스크롤 생성 */
             display: flex;
             flex-direction: column;
             gap: 12px;
+            padding: 20px;
+            margin: 0;
+            list-style: none;
+            background: #f0f2f5;
             padding-bottom: 120px;
-            /* 하단 입력창에 가려지지 않게 여백 확보 */
-            -webkit-overflow-scrolling: touch;
-            /* 모바일 부드러운 스크롤 */
         }
 
         #messages li {
             padding: 10px 15px;
             border-radius: 15px;
-            max-width: 75%;
+            max-width: 70%;
             word-wrap: break-word;
-            font-size: 0.95rem;
             position: relative;
+            font-size: 0.95rem;
         }
 
         .my-msg {
@@ -125,59 +114,56 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
-        #main-settings-btn {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            font-size: 1.5rem;
-            cursor: pointer;
-            z-index: 2000;
-            background: white;
-            border-radius: 50%;
-            padding: 5px;
-            width: 35px;
-            height: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-
         #form {
-            display: flex;
-            gap: 10px;
-            padding: 10px 15px;
             position: fixed;
-            bottom: 20px;
-            /* 바닥에서 20px 띄움 */
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
             max-width: 450px;
             background: white;
             border-radius: 30px;
+            padding: 10px 15px;
+            display: flex;
+            gap: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             z-index: 100;
-            /* 메시지보다 위에 오도록 설정 */
         }
 
         #input {
-            flex-grow: 1;
+            flex: 1;
             border: none;
             outline: none;
+            background: transparent;
         }
 
+        #main-settings-btn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 2000;
+            cursor: pointer;
+            background: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 하단 푸터바 (mailto 포함) */
         #footer-bar {
             position: fixed;
             bottom: 0;
-            left: 0;
             width: 100%;
-            background: #ffffff;
-            border-top: 1px solid #ddd;
-            padding: 15px 0;
+            background: white;
+            padding: 10px 0;
             text-align: center;
-            font-size: 0.85rem;
-            z-index: 10;
+            font-size: 0.8rem;
+            border-top: 1px solid #ddd;
+            z-index: 5;
         }
     </style>
 </head>
@@ -189,11 +175,11 @@
         <div class="room-container">
             <h2 style="color: #6e8efb;">💬 프리톡</h2>
             <div id="room-list"></div>
-            <div class="create-area">
+            <div class="create-area" style="display:flex; gap:5px;">
                 <input id="new-room-input" placeholder="방 이름..."
-                    style="width:70%; padding:10px; border-radius:10px; border:1px solid #ddd;" />
-                <button class="create-btn" onclick="createNewRoom()"
-                    style="background:#a777e3; color:white; border:none; padding:10px; border-radius:10px;">생성</button>
+                    style="flex:1; padding:10px; border-radius:10px; border:1px solid #ddd;" />
+                <button onclick="createNewRoom()"
+                    style="background:#a777e3; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer;">생성</button>
             </div>
         </div>
     </div>
@@ -202,25 +188,25 @@
         <div class="chat-header">
             <div style="display:flex; align-items:center; gap:10px;">
                 <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem;">⬅️</span>
-                <div id="room-title" style="font-weight:bold;"></div>
+                <div id="room-title" style="font-weight:bold; font-size:1.1rem;"></div>
             </div>
             <button onclick="leaveChat()"
-                style="background:#ff4d4d; color:white; border:none; padding:5px 12px; border-radius:8px; font-weight:bold;">완전
-                퇴장</button>
+                style="background:#ff4d4d; color:white; border:none; padding:7px 15px; border-radius:8px; font-weight:bold; cursor:pointer;">방
+                나가기</button>
         </div>
         <ul id="messages"></ul>
         <form id="form">
             <input type="file" id="file-input" style="display:none;" onchange="uploadFile(this)">
             <button type="button" style="background:none; border:none; font-size:1.2rem; cursor:pointer;"
                 onclick="document.getElementById('file-input').click()">📎</button>
-            <input id="input" autocomplete="off" placeholder="메시지 입력..." />
+            <input id="input" autocomplete="off" placeholder="메시지를 입력하세요..." />
             <button type="submit"
-                style="background:#6e8efb; color:white; border:none; padding:10px 15px; border-radius:20px;">전송</button>
+                style="background:#6e8efb; color:white; border:none; padding:10px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">전송</button>
         </form>
     </div>
 
     <div id="footer-bar">
-        문의 <strong>제이투코어(J2CORE)</strong> 대표 <strong>정준용</strong><br>
+        문의 <strong>제이투코어(J2CORE)</strong> 대표 <strong>정준용</strong> |
         <a href="mailto:jjyong3872@naver.com" style="color:#0984e3; text-decoration:none; font-weight:bold;">📩
             jjyong3872@naver.com</a>
     </div>
@@ -230,18 +216,11 @@
         const socket = io();
         let userName = '', currentRoom = '';
 
-        // 수신부
-        socket.on('chat message', (data) => {
-            console.log("메시지 받음:", data);
-            addMessage(data);
-        });
-
+        socket.on('chat message', (data) => { addMessage(data); });
         socket.on('load messages', (messages) => {
             const list = document.getElementById('messages');
             list.innerHTML = '';
-            if (messages && Array.isArray(messages)) {
-                messages.forEach(addMessage);
-            }
+            if (messages) messages.forEach(addMessage);
         });
 
         socket.on('room counts', (data) => {
@@ -263,73 +242,39 @@
                 if (!data) return;
                 const list = document.getElementById('messages');
                 const item = document.createElement('li');
-
                 if (data.name === '시스템' || data.type === 'system') {
-                    item.style.cssText = "align-self:center; background:rgba(0,0,0,0.05); color:#777; font-size:0.8rem; border-radius:10px; padding:5px 15px; margin:5px 0;";
+                    item.style.cssText = "align-self:center; background:rgba(0,0,0,0.08); color:#555; font-size:0.8rem; border-radius:20px; padding:5px 15px; margin:10px 0;";
                     item.textContent = data.text;
                     list.appendChild(item);
                     list.scrollTop = list.scrollHeight;
                     return;
                 }
-
                 const isMy = (data.name === userName);
                 item.className = isMy ? 'my-msg' : 'other-msg';
-
-                let messageBody = (data.type === 'image') ?
-                    `<img src="${data.text}" style="max-width:200px; border-radius:10px; display:block;">` :
-                    (data.text || "");
-
+                let content = (data.type === 'image') ? `<img src="${data.text}" style="max-width:100%; border-radius:10px;">` : (data.text || "");
                 const timeStr = data.time || "";
                 const readCnt = (data.read_count > 0) ? data.read_count : "";
-
-                const infoHtml = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column;">
-                    <span style="color:#ffeb33; font-size:0.75rem; font-weight:bold;">${readCnt}</span>
-                    <span style="color:#999; font-size:0.65rem;">${timeStr}</span>
+                const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-50px; align-items:flex-end;' : 'right:-50px; align-items:flex-start;'} display:flex; flex-direction:column;">
+                    <span style="color:#e67e22; font-size:0.7rem; font-weight:bold;">${readCnt}</span>
+                    <span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
                 </div>`;
-
-                item.innerHTML = isMy ? `${messageBody}${infoHtml}` : `<strong>${data.name}</strong><br>${messageBody}${infoHtml}`;
+                item.innerHTML = isMy ? `${content}${info}` : `<small style="display:block; margin-bottom:4px; color:#777;">${data.name}</small>${content}${info}`;
                 list.appendChild(item);
                 list.scrollTop = list.scrollHeight;
             } catch (e) { console.error(e); }
         }
 
-        // 전송부
         document.getElementById('form').addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('input');
             if (input.value.trim() && currentRoom) {
-                socket.emit('chat message', {
-                    room: currentRoom,
-                    name: userName,
-                    text: input.value,
-                    type: 'text'
-                });
+                socket.emit('chat message', { room: currentRoom, name: userName, text: input.value, type: 'text' });
                 input.value = '';
             }
         });
 
-        // ⭐ 누락되었던 핵심 함수!
-        function uploadFile(input) {
-            const file = input.files[0];
-            if (file && currentRoom) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    socket.emit('chat message', {
-                        room: currentRoom,
-                        name: userName,
-                        text: e.target.result,
-                        type: 'image'
-                    });
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
         function enterRoom(roomName) {
-            if (!userName) {
-                userName = prompt("닉네임:");
-                if (!userName) return;
-            }
+            if (!userName) { userName = prompt("닉네임을 입력하세요:"); if (!userName) return; }
             currentRoom = roomName;
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
@@ -346,9 +291,24 @@
             document.getElementById('main-settings-btn').style.display = 'flex';
         }
 
-        function leaveChat() { if (confirm("방에서 완전히 나갈까요?")) { socket.emit('leave room'); location.reload(); } }
+        function leaveChat() {
+            if (confirm("이 방에서 나갈까요?")) {
+                socket.emit('leave room');
+                currentRoom = '';
+                goBack();
+            }
+        }
+
         function createNewRoom() { const val = document.getElementById('new-room-input').value; if (val) enterRoom(val); }
-        function toggleSettings() { alert('준비 중입니다.'); }
+        function toggleSettings() { alert('설정 메뉴입니다.'); }
+        function uploadFile(input) {
+            const file = input.files[0];
+            if (file && currentRoom) {
+                const reader = new FileReader();
+                reader.onload = (e) => socket.emit('chat message', { room: currentRoom, name: userName, text: e.target.result, type: 'image' });
+                reader.readAsDataURL(file);
+            }
+        }
     </script>
 </body>
 
