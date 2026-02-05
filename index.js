@@ -51,7 +51,7 @@ io.on('connection', (socket) => {
         }
         allRooms.add(data.room);
         if (data.password && !roomPasswords[data.room]) roomPasswords[data.room] = data.password;
-        
+
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
@@ -86,7 +86,7 @@ io.on('connection', (socket) => {
         const timeString = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
         const roomMembers = io.sockets.adapter.rooms.get(data.room);
         const countInRoom = (roomMembers && roomMembers.size > 1) ? 0 : 1;
-        
+
         db.run("INSERT INTO messages (room, name, text, type, read_count) VALUES (?, ?, ?, ?, ?)",
             [data.room, data.name, data.text, data.type || 'text', countInRoom], function (err) {
                 if (!err) {
@@ -103,6 +103,7 @@ io.on('connection', (socket) => {
         });
     });
 
+    s// [서버] leave room 이벤트만 알림을 쏘도록 유지
     socket.on('leave room', () => {
         if (socket.room) {
             const r = socket.room;
@@ -110,7 +111,7 @@ io.on('connection', (socket) => {
             io.to(r).emit('chat message', {
                 id: Date.now(),
                 name: '시스템',
-                text: `${n}님이 퇴장했습니다.`,
+                text: `${n}님이 퇴장했습니다.`, // 명시적으로 버튼 눌렀을 때만 알림
                 type: 'system',
                 time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
             });
@@ -120,17 +121,10 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('disconnect', () => { 
-        if (socket.room && socket.userName) {
-            io.to(socket.room).emit('chat message', {
-                id: Date.now(),
-                name: '시스템',
-                text: `${socket.userName}님이 퇴장했습니다.`,
-                type: 'system',
-                time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-            });
-        }
-        sendRoomCounts(); 
+    // [서버] disconnect(새로고침, 탭 닫기) 시에는 알림을 뺄지 말지 선택
+    socket.on('disconnect', () => {
+        // 만약 새로고침할 때도 퇴장 알림을 안 주고 싶다면 이 안의 알림 로직을 지우세요.
+        sendRoomCounts();
     });
 });
 

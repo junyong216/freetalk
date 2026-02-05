@@ -428,21 +428,21 @@
             socket.emit('join room', { room: roomName, name: userName });
         }
 
+        // [수정] 목록으로 잠시 나갈 때 (알림X)
         function goBack() {
-            socket.emit('leave room');
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
-
-            // 🕵️ 푸터 다시 보이기 추가!
             document.getElementById('footer-bar').style.display = 'block';
-
             document.getElementById('main-settings-btn').style.display = 'block';
             if (deferredPrompt) document.getElementById('main-install-btn').style.display = 'block';
-            currentRoom = '';
+
+            currentRoom = ''; // 현재 방 정보만 초기화
         }
 
+        // [수정] 아예 앱을 끄거나 방을 영구적으로 나갈 때
         function leaveChat() {
             if (confirm("대화방을 완전히 나갈까요? (닉네임이 초기화됩니다)")) {
+                socket.emit('leave room'); // 여기서만 퇴장 신호를 보냅니다.
                 location.reload();
             }
         }
