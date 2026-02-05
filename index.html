@@ -308,27 +308,24 @@
                 if (!userName) return;
             }
 
-            // ⭐️ [핵심] 방에 들어가기 전, 기존 화면에 그려진 메시지들을 싹 지웁니다.
-            // 이 코드가 없으면 이전 방 대화 내용 밑에 새 방 대화가 붙어서 보입니다.
             const list = document.getElementById('messages');
-            list.innerHTML = '';
+            list.innerHTML = ''; // 이전 방 메시지 지우기
 
-            currentRoom = '';
+            // ⭐️ 수정: 빈 값이 아니라 들어가는 방 이름(roomName)을 넣어야 합니다!
+            currentRoom = roomName;
+
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
             document.getElementById('footer-bar').style.display = 'none';
             document.getElementById('main-settings-btn').style.display = 'none';
             document.getElementById('room-title').textContent = roomName;
 
-            // 서버에 나 지금 이 방 데이터 필요하다고 요청
             socket.emit('join room', { room: roomName, name: userName });
         }
 
         function goBack() {
-            // 단순 UI 전환이 아니라 데이터 꼬임 방지를 위해 
-            // 가끔은 새로고침이 필요할 수 있습니다.
-            // 만약 "초기화"를 원하시면 아래 주석을 푸세요.
-            // location.reload(); 
+            // ⭐️ 추가: 목록으로 돌아갈 때는 현재 방 정보를 비워줍니다.
+            currentRoom = '';
 
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
