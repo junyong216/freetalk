@@ -7,10 +7,6 @@
     <title>프리톡 (Free Talk)</title>
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="프리톡로고.png" type="image/png">
-    <link rel="apple-touch-icon" href="프리톡로고.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#6e8efb">
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
@@ -224,12 +220,6 @@
             color: white;
         }
 
-        body.dark-mode #footer-bar {
-            background: #1a1a1a;
-            border-top-color: #444;
-            color: #ccc;
-        }
-
         #image-modal {
             display: none;
             position: fixed;
@@ -242,17 +232,16 @@
             align-items: center;
             justify-content: center;
         }
-
-        #modal-img {
-            max-width: 90%;
-            max-height: 90%;
-        }
     </style>
 </head>
 
 <body>
-    <div id="main-install-btn" style="position: absolute; top: 20px; right: 60px; font-size: 1.5rem; cursor: pointer; display: none; z-index: 1001;" onclick="installApp()">📲</div>
-    <div id="main-settings-btn" style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; z-index: 1001;" onclick="toggleSettings()">⚙️</div>
+    <div id="main-install-btn"
+        style="position: absolute; top: 20px; right: 60px; font-size: 1.5rem; cursor: pointer; display: none; z-index: 1001;"
+        onclick="installApp()">📲</div>
+    <div id="main-settings-btn"
+        style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; z-index: 1001;"
+        onclick="toggleSettings()">⚙️</div>
 
     <div id="list-area">
         <div class="room-container">
@@ -271,87 +260,76 @@
                 <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem;">⬅️</span>
                 <div id="room-title" style="font-weight:bold;"></div>
             </div>
-            <button onclick="leaveChat()" style="background:#ff4d4d; color:white; border:none; padding:5px 15px; border-radius:8px; cursor:pointer;">완전 퇴장</button>
+            <button onclick="leaveChat()"
+                style="background:#ff4d4d; color:white; border:none; padding:5px 15px; border-radius:8px; cursor:pointer;">완전
+                퇴장</button>
         </div>
         <ul id="messages"></ul>
         <form id="form">
             <input type="file" id="file-input" style="display:none;" onchange="uploadFile(this)">
-            <button type="button" style="background:none; border:none; font-size:1.2rem; cursor:pointer;" onclick="document.getElementById('file-input').click()">📎</button>
+            <button type="button" style="background:none; border:none; font-size:1.2rem; cursor:pointer;"
+                onclick="document.getElementById('file-input').click()">📎</button>
             <input id="input" autocomplete="off" placeholder="메시지 입력..." />
-            <button type="submit" style="background:#6e8efb; color:white; border:none; padding:10px 15px; border-radius:20px; cursor:pointer;">전송</button>
+            <button type="submit"
+                style="background:#6e8efb; color:white; border:none; padding:10px 15px; border-radius:20px; cursor:pointer;">전송</button>
         </form>
     </div>
 
     <div id="footer-bar">
         문의 <strong>제이투코어(J2CORE)</strong> 대표 <strong>정준용</strong><br>
-        <a href="mailto:jjyong3872@naver.com" style="color:#0984e3; text-decoration:none; font-weight:bold; display: inline-block; margin-top: 5px;">📩 jjyong3872@naver.com</a>
+        <a href="mailto:jjyong3872@naver.com"
+            style="color:#0984e3; text-decoration:none; font-weight:bold; display: inline-block; margin-top: 5px;">📩
+            jjyong3872@naver.com</a>
     </div>
 
     <div id="context-menu">
         <div onclick="handleShare()">📤 복사</div>
         <div onclick="handleDelete()" style="color:red;">🗑️ 삭제</div>
     </div>
-    <div id="image-modal" onclick="this.style.display='none'"><img id="modal-img"></div>
-    <div id="settings-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:10001;">
+    <div id="image-modal" onclick="this.style.display='none'"><img id="modal-img"
+            style="max-width:90%; max-height:90%;"></div>
+    <div id="settings-modal"
+        style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:10001;">
         <h3 style="margin-top:0;">🛠️ 환경설정</h3>
         <hr>
         <div style="margin: 20px 0;"><label>🎨 테마</label>
-            <select id="theme-select" onchange="changeTheme()" style="width:100%; padding:8px; border-radius:8px; margin-top:5px;">
+            <select id="theme-select" onchange="changeTheme()"
+                style="width:100%; padding:8px; border-radius:8px; margin-top:5px;">
                 <option value="light">기본</option>
                 <option value="dark">다크</option>
             </select>
         </div>
-        <button onclick="toggleSettings()" style="width:100%; padding:10px; background:#6e8efb; color:white; border:none; border-radius:10px; cursor:pointer;">닫기</button>
+        <button onclick="toggleSettings()"
+            style="width:100%; padding:10px; background:#6e8efb; color:white; border:none; border-radius:10px; cursor:pointer;">닫기</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let userName = '', currentRoom = '', selectedId = null, selectedText = '';
-        let deferredPrompt;
+        let userName = '', currentRoom = '', selectedId = null, selectedText = '', deferredPrompt;
 
-        // PWA 설치
+        // [PWA 설치 로직 복구]
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('main-install-btn').style.display = 'block'; });
         function installApp() { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('main-install-btn').style.display = 'none'; }); } }
 
-        function enterRoom(roomName) {
-            if (!userName) {
-                const nick = prompt("닉네임:");
-                if (!nick) return;
-                userName = nick;
+        // [메시지 수신 - 최우선 순위]
+        socket.on('chat message', (data) => { addMessage(data); });
+        socket.on('load messages', (messages) => {
+            const list = document.getElementById('messages');
+            list.innerHTML = '';
+            if (messages) messages.forEach(addMessage);
+        });
+        socket.on('room counts', (data) => {
+            const list = document.getElementById('room-list');
+            list.innerHTML = '';
+            for (const room in data.roomCounts) {
+                const item = document.createElement('div');
+                item.className = 'room-item';
+                item.onclick = () => enterRoom(room);
+                item.innerHTML = `<span>${room}</span><span>${data.roomCounts[room]}명</span>`;
+                list.appendChild(item);
             }
-
-            // 연결 유지 상태에서 화면 전환만 (설정 버튼 등 숨기기)
-            document.getElementById('list-area').style.display = 'none';
-            document.getElementById('chat-area').style.display = 'flex';
-            document.getElementById('footer-bar').style.display = 'none';
-            document.getElementById('main-settings-btn').style.display = 'none';
-            document.getElementById('main-install-btn').style.display = 'none';
-
-            if (currentRoom === roomName) return; // 이미 접속 중이면 입장 처리 생략
-
-            currentRoom = roomName;
-            document.getElementById('room-title').textContent = currentRoom;
-            document.getElementById('messages').innerHTML = '<li id="loading-status" style="text-align:center; width:100%; color:gray;">메시지 로딩 중...</li>';
-            socket.emit('join room', { room: roomName, name: userName });
-        }
-
-        function goBack() {
-            // 퇴장 신호 없이 목록으로 이동 (연결 유지)
-            document.getElementById('list-area').style.display = 'flex';
-            document.getElementById('chat-area').style.display = 'none';
-            document.getElementById('footer-bar').style.display = 'block';
-            document.getElementById('main-settings-btn').style.display = 'block';
-            if (deferredPrompt) document.getElementById('main-install-btn').style.display = 'block';
-        }
-
-        function leaveChat() {
-            if (confirm("완전히 나갈까요? (대화방 퇴장)")) {
-                socket.emit('leave room'); 
-                currentRoom = ''; 
-                location.reload(); 
-            }
-        }
+        });
 
         function addMessage(data) {
             if (!data) return;
@@ -366,71 +344,50 @@
                 item.style.cssText = `align-self:center; background:rgba(0,0,0,0.08); color:#777; font-size:0.75rem; padding:4px 12px; border-radius:15px; margin:15px 0; text-align:center; max-width:80%;`;
                 item.innerHTML = data.text;
                 list.appendChild(item);
-                list.scrollTop = list.scrollHeight;
-                return;
-            }
-
-            let content = data.type === 'image' ? `<img src="${data.text}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="openImageViewer(this.src)">` : data.text;
-            const readHtml = data.read_count > 0 ? `<span class="read-unread">${data.read_count}</span>` : '';
-            const timeHtml = `<span class="time-text">${data.time || ''}</span>`;
-            const infoSide = `<div style="position: absolute; bottom: 0; display: flex; flex-direction: column; ${data.name === userName ? 'left: -50px; align-items: flex-end;' : 'right: -50px; align-items: flex-start;'}">${readHtml}${timeHtml}</div>`;
-
-            if (data.name === userName) {
-                item.className = 'my-msg';
-                item.innerHTML = `${content}${infoSide}`;
             } else {
-                item.className = 'other-msg';
-                item.innerHTML = `<strong>${data.name}</strong><br>${content}${infoSide}`;
+                const isMyMsg = data.name === userName;
+                item.className = isMyMsg ? 'my-msg' : 'other-msg';
+                let content = data.type === 'image' ? `<img src="${data.text}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="openImageViewer(this.src)">` : data.text;
+                const readHtml = data.read_count > 0 ? `<span class="read-unread">${data.read_count}</span>` : '';
+                const timeHtml = `<span class="time-text">${data.time || ''}</span>`;
+                const infoSide = `<div style="position: absolute; bottom: 0; display: flex; flex-direction: column; ${isMyMsg ? 'left: -50px; align-items: flex-end;' : 'right: -50px; align-items: flex-start;'}">${readHtml}${timeHtml}</div>`;
+                item.innerHTML = isMyMsg ? `${content}${infoSide}` : `<strong>${data.name}</strong><br>${content}${infoSide}`;
+                item.oncontextmenu = (e) => { e.preventDefault(); selectedId = data.id; selectedText = data.text; const menu = document.getElementById('context-menu'); menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px'; };
+                list.appendChild(item);
             }
-
-            item.oncontextmenu = (e) => {
-                e.preventDefault();
-                selectedId = data.id; selectedText = data.text;
-                const menu = document.getElementById('context-menu');
-                menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
-            };
-            list.appendChild(item);
             list.scrollTop = list.scrollHeight;
         }
 
-        socket.on('load messages', (messages) => {
-            const list = document.getElementById('messages');
-            list.innerHTML = '';
-            if (messages && messages.length > 0) messages.forEach(addMessage);
-            else list.innerHTML = '<li style="text-align:center; width:100%; color:gray;">대화 내용이 없습니다.</li>';
-        });
+        function enterRoom(roomName) {
+            if (!userName) { userName = prompt("닉네임:"); if (!userName) return; }
+            document.getElementById('list-area').style.display = 'none';
+            document.getElementById('chat-area').style.display = 'flex';
+            document.getElementById('footer-bar').style.display = 'none';
+            document.getElementById('main-settings-btn').style.display = 'none';
+            document.getElementById('main-install-btn').style.display = 'none';
+            if (currentRoom === roomName) return;
+            currentRoom = roomName;
+            document.getElementById('room-title').textContent = currentRoom;
+            document.getElementById('messages').innerHTML = '<li id="loading-status" style="text-align:center; width:100%; color:gray;">로딩 중...</li>';
+            socket.emit('join room', { room: roomName, name: userName });
+        }
 
-        socket.on('chat message', (data) => { addMessage(data); });
+        function goBack() {
+            document.getElementById('list-area').style.display = 'flex';
+            document.getElementById('chat-area').style.display = 'none';
+            document.getElementById('footer-bar').style.display = 'block';
+            document.getElementById('main-settings-btn').style.display = 'block';
+            if (deferredPrompt) document.getElementById('main-install-btn').style.display = 'block';
+        }
 
-        socket.on('room counts', (data) => {
-            const list = document.getElementById('room-list');
-            list.innerHTML = '';
-            for (const room in data.roomCounts) {
-                const item = document.createElement('div');
-                item.className = 'room-item';
-                item.onclick = () => enterRoom(room);
-                item.innerHTML = `<span>${room}</span><span>${data.roomCounts[room]}명</span>`;
-                list.appendChild(item);
-            }
-        });
-
-        document.getElementById('form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const input = document.getElementById('input');
-            if (input.value.trim()) {
-                socket.emit('chat message', { room: currentRoom, name: userName, text: input.value, type: 'text' });
-                input.value = '';
-            }
-        });
-
-        // 나머지 유틸리티 함수들
-        function createNewRoom() { const input = document.getElementById('new-room-input'); if (input.value.trim()) enterRoom(input.value.trim()); }
-        function toggleSettings() { const m = document.getElementById('settings-modal'); m.style.display = m.style.display === 'none' ? 'block' : 'none'; }
-        function changeTheme() { const t = document.getElementById('theme-select').value; document.body.classList.toggle('dark-mode', t === 'dark'); }
+        function leaveChat() { if (confirm("완전히 나갈까요?")) { socket.emit('leave room'); location.reload(); } }
+        document.getElementById('form').addEventListener('submit', (e) => { e.preventDefault(); const input = document.getElementById('input'); if (input.value.trim() && currentRoom) { socket.emit('chat message', { room: currentRoom, name: userName, text: input.value, type: 'text' }); input.value = ''; } });
+        function createNewRoom() { const i = document.getElementById('new-room-input'); if (i.value.trim()) enterRoom(i.value.trim()); }
+        function toggleSettings() { const s = document.getElementById('settings-modal'); s.style.display = s.style.display === 'none' ? 'block' : 'none'; }
+        function changeTheme() { document.body.classList.toggle('dark-mode', document.getElementById('theme-select').value === 'dark'); }
         function openImageViewer(src) { document.getElementById('image-modal').style.display = 'flex'; document.getElementById('modal-img').src = src; }
         function handleShare() { navigator.clipboard.writeText(selectedText).then(() => alert("복사되었습니다.")); }
-        function uploadFile(input) { alert('파일 업로드 기능은 서버 설정에 따라 추가 구현이 필요합니다.'); }
-        function handleDelete() { alert('삭제 기능은 서버 API가 필요합니다.'); }
+        function uploadFile(input) { alert('서버 파일 전송 기능 준비 중입니다.'); }
         window.onclick = () => document.getElementById('context-menu').style.display = 'none';
     </script>
 </body>
