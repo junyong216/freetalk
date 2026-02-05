@@ -44,35 +44,49 @@ io.on('connection', (socket) => {
 
     socket.on('join room', (data) => {
         const isAlreadyIn = socket.rooms.has(data.room);
+
+        // 기존 방에서 나가고 새 방에 들어가는 처리가 확실해야 합니다.
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
 
-        db.all("SELECT id, name, text, type, fileName, read_count, strftime('%H:%M', created_at, 'localtime') as time FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100", [data.room], (err, rows) => {
-            if (!err) socket.emit('load messages', rows);
-        });
+        // ⭐️ WHERE room = ? 이 부분이 핵심입니다.
+        db.all("SELECT id, name, text, type, fileName, read_count, strftime('%H:%M', created_at, 'localtime') as time FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100",
+            [data.room], (err, rows) => {
+                if (!err) {
+                    // 해당 소켓(본인)에게만 그 방의 과거 내역을 전달합니다.
+                    socket.emit('load messages', rows);
+                }
+            });
 
         if (!isAlreadyIn) {
             io.to(data.room).emit('chat message', {
-                name: '시스템', text: `${data.name}님이 입장했습니다.`, type: 'system'
+                name: '시스템', text: `${data.name}님이 입장했습니다.`, type: 'system', room: data.room
             });
         }
         sendRoomCounts();
     });
 
     socket.on('chat message', (data) => {
-        const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-        // 데이터베이스 저장 및 클라이언트로 전송
+        const timeStr = new Date().toLocaleTimeString('ko-KR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+
+        // ⭐️ data.room이 있는지 확인하고 저장합니다.
         db.run("INSERT INTO messages (room, name, text, type, read_count) VALUES (?, ?, ?, ?, ?)",
             [data.room, data.name, data.text, data.type || 'text', 0], function (err) {
                 if (!err) {
+                    // 해당 방(data.room)에 있는 사람들에게만 메시지를 보냅니다.
                     io.to(data.room).emit('chat message', {
                         id: this.lastID,
                         name: data.name,
                         text: data.text,
                         type: data.type || 'text',
                         time: timeStr,
-                        read_count: 0
+                        read_count: 0,
+                        room: data.room // 방 정보 포함
                     });
                 }
             });
