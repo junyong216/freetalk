@@ -167,25 +167,23 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
-        /* 읽음 숫자 위치 잡기 */
+        /* 숫자가 말풍선 밖으로 삐져나오게 설정 */
         .read-unread {
             color: #ffeb33;
-            /* 카톡 느낌 노란색 (바탕이 어두우면 흰색/노란색 추천) */
-            font-size: 0.7rem;
-            font-weight: bold;
+            /* 노란색 숫자 */
+            font-size: 0.75rem;
             position: absolute;
-            bottom: 5px;
-            /* 말풍선 바닥에 맞춤 */
+            bottom: 0;
         }
 
-        /* 내 메시지 숫자는 말풍선 왼쪽 밖으로 */
         .my-msg .read-unread {
-            left: -25px;
+            left: -20px;
+            /* 내 메시지 왼쪽 20px 지점에 표시 */
         }
 
-        /* 상대 메시지 숫자는 말풍선 오른쪽 밖으로 */
         .other-msg .read-unread {
-            right: -25px;
+            right: -20px;
+            /* 상대 메시지 오른쪽 20px 지점에 표시 */
         }
 
         /* 입력 폼 */
@@ -426,6 +424,7 @@
             document.getElementById('messages').innerHTML = '<li style="text-align:center; width:100%; color:gray;">메시지 로딩 중...</li>';
 
             socket.emit('join room', { room: roomName, name: userName });
+            socket.emit('start watching');
         }
 
         // [수정] 목록으로 잠시 나갈 때 (알림X)
@@ -437,6 +436,7 @@
             if (deferredPrompt) document.getElementById('main-install-btn').style.display = 'block';
 
             currentRoom = ''; // 현재 방 정보만 초기화
+            socket.emit('stop watching');
         }
 
         // [수정] 아예 앱을 끄거나 방을 영구적으로 나갈 때
@@ -462,7 +462,7 @@
             const item = document.createElement('li');
             item.id = `msg-${data.id}`;
 
-            // 1. 시스템 메시지 (수정 없음)
+            // 1. 시스템 메시지
             if (data.type === 'system') {
                 item.style.cssText = `align-self:center; background:rgba(0,0,0,0.08); color:#777; font-size:0.75rem; padding:4px 12px; border-radius:15px; margin:15px 0; list-style:none; text-align:center; max-width:80%; box-shadow:none; display:inline-block;`;
                 item.innerHTML = `${data.text}`;
@@ -471,7 +471,7 @@
                 return;
             }
 
-            // 2. 일반 메시지 컨텐츠 (수정 없음)
+            // 2. 컨텐츠 설정
             let content = '';
             if (data.type === 'image') {
                 content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="openImageViewer(this.src)">`;
@@ -481,22 +481,27 @@
                 content = data.text;
             }
 
-            // ⭐ 3. 읽음 숫자 처리 (이 부분을 이렇게 바꾸세요)
-            // 숫자가 0보다 클 때만 보여주고, 0이면 아예 안 나오게 합니다.
-            const readHtml = data.read_count > 0 ? `<span class="read-unread">${data.read_count}</span>` : '';
+            // 3. 메타 정보 (읽음 숫자 + 시간)
+            const readHtml = data.read_count > 0 ? `<span class="read-unread" style="color: #ffeb33; font-weight: bold; font-size: 0.7rem; display: block;">${data.read_count}</span>` : '';
+            const timeHtml = `<span class="time-text" style="color: #999; font-size: 0.65rem; white-space: nowrap;">${data.time || ''}</span>`;
 
-            // ⭐ 4. 렌더링 순서 조정 (매우 중요)
+            // 4. 레이아웃 (말풍선 옆에 숫자와 시간 배치)
+            const infoContainer = `<div style="position: absolute; bottom: 0; display: flex; flex-direction: column; ${data.name === userName ? 'left: -45px; align-items: flex-end;' : 'right: -45px; align-items: flex-start;'}">
+                ${readHtml}
+                ${timeHtml}
+                </div>`;
+
             if (data.name === userName) {
                 item.className = 'my-msg';
-                // [내 메시지] 숫자(왼쪽) + 내용(오른쪽)
-                item.innerHTML = `${readHtml}${content}`;
+                item.style.position = 'relative'; // 기준점 설정
+                item.innerHTML = `${content}${infoContainer}`;
             } else {
                 item.className = 'other-msg';
-                // [상대 메시지] 이름 + 내용(왼쪽) + 숫자(오른쪽)
-                item.innerHTML = `<strong>${data.name}</strong><br>${content}${readHtml}`;
+                item.style.position = 'relative'; // 기준점 설정
+                item.innerHTML = `<strong>${data.name}</strong><br>${content}${infoContainer}`;
             }
 
-            // 5. 우클릭 메뉴 (수정 없음)
+            // 5. 우클릭 메뉴
             item.oncontextmenu = (e) => {
                 e.preventDefault();
                 selectedId = data.id; selectedSender = data.name; selectedText = (data.type === 'text') ? data.text : '[파일]';
@@ -513,6 +518,9 @@
             const messageList = document.getElementById('messages');
             messageList.innerHTML = '';
             if (messages) messages.forEach(addMessage);
+
+            // 💡 여기서 내가 이 방의 메시지를 다 읽었다고 서버에 알림
+            socket.emit('start watching');
             socket.emit('mark as read');
         });
 
