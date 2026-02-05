@@ -7,13 +7,12 @@
     <title>프리톡 (Free Talk)</title>
 
     <link rel="manifest" href="/manifest.json">
-
     <link rel="icon" href="프리톡로고.png" type="image/png">
     <link rel="apple-touch-icon" href="프리톡로고.png">
-    <link rel="apple-touch-icon-precomposed" href="프리톡로고.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#6e8efb">
+    
     <style>
         body {
             font-family: 'Pretendard', sans-serif;
@@ -22,11 +21,10 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            /* [수정] overflow: hidden 제거하여 새로고침 가능하게 변경 */
-            /* [추가] 모바일에서 상하단 바운스 효과 제어 */
-            overscroll-behavior-y: contain; 
+            overscroll-behavior-y: contain; /* 당겨서 새로고침 가능하게 유지 */
         }
 
+        /* 메인 리스트 영역 */
         #list-area {
             display: flex;
             flex-direction: column;
@@ -43,7 +41,7 @@
             border-radius: 20px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             width: 380px;
-            max-width: 92%;
+            max-width: 95%;
             box-sizing: border-box;
             text-align: center;
             max-height: 80vh;
@@ -72,6 +70,34 @@
             font-weight: bold;
         }
 
+        /* [수정] 방 생성 입력창 & 버튼 최적화 */
+        .create-area {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+        }
+
+        #new-room-input {
+            flex: 1;
+            min-width: 0; /* 찌그러짐 방지 */
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .create-btn {
+            flex-shrink: 0; /* 버튼 크기 고정 */
+            white-space: nowrap; /* 글자 세로 방지 */
+            padding: 10px 20px;
+            background: #a777e3;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* 채팅 영역 */
         #chat-area {
             display: none;
             flex-direction: column;
@@ -80,6 +106,7 @@
             box-sizing: border-box;
         }
 
+        /* 공지사항 바 */
         #notice-bar {
             background: #ffffff;
             border-left: 5px solid #a29bfe;
@@ -93,6 +120,10 @@
             z-index: 10;
         }
 
+        #notice-content-area { flex: 1; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .close-notice { margin-left: 10px; cursor: pointer; color: #ccc; font-weight: bold; font-size: 1.2rem; }
+
+        /* 메시지 영역 */
         #messages {
             list-style: none;
             padding: 0;
@@ -115,15 +146,19 @@
             position: relative;
         }
 
-        .my-msg { align-self: flex-end; background-color: #a29bfe !important; color: white; border-bottom-right-radius: 2px; }
+        .my-msg { align-self: flex-end; background-color: #a29bfe !important; color: white; border-bottom-right-radius: 2px; align-items: flex-end; }
         .other-msg { align-self: flex-start; background-color: #fff; color: #333; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); }
 
+        .read-unread { color: #0984e3 !important; font-size: 0.75rem; font-weight: bold; position: absolute; left: -25px; bottom: 5px; }
+        .time { font-size: 0.65rem; opacity: 0.8; }
+
+        /* 입력 폼 */
         #form {
             display: flex;
             gap: 10px;
             padding: 15px;
             position: fixed;
-            bottom: 20px !important;
+            bottom: 25px !important;
             left: 50%;
             transform: translateX(-50%);
             width: 95%;
@@ -134,6 +169,9 @@
             z-index: 100;
         }
 
+        #input { flex-grow: 1; border: none; outline: none; }
+
+        /* 하단 푸터 */
         #footer-bar {
             position: fixed;
             bottom: 0;
@@ -148,32 +186,33 @@
             z-index: 1000;
         }
 
-        /* 이미지 확대 모달 */
-        #image-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); align-items: center; justify-content: center; }
-        #modal-img { max-width: 90%; max-height: 90%; }
+        /* 컨텍스트 메뉴 */
+        #context-menu {
+            display: none;
+            position: fixed;
+            width: 150px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+        }
 
-        /* 테마 모드 */
+        #context-menu div { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+
+        /* 테마 모드들 */
         body.dark-mode { background-color: #1a1a1a; color: #ffffff; }
-        body.dark-mode .room-container { background: #2d2d2d; }
+        body.dark-mode .room-container, body.dark-mode #notice-bar, body.dark-mode #form { background: #2d2d2d; color: white; }
         body.purple-mode { background-color: #f3e5f5; }
 
-        /* [추가] 설치 버튼 스타일 */
-        #install-btn {
-            position: absolute;
-            top: 20px;
-            right: 60px; /* 톱니바퀴 왼쪽 */
-            font-size: 1.5rem;
-            cursor: pointer;
-            display: none; /* 크롬이 허용할 때만 보임 */
-            z-index: 1001;
-        }
+        /* 이미지 확대 모달 */
+        #image-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; }
+        #modal-img { max-width: 90%; max-height: 90%; }
     </style>
 </head>
 
 <body>
-    <div id="install-btn" onclick="installApp()" title="앱으로 설치">📲</div>
-    <div style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; z-index: 1001;"
-        onclick="toggleSettings()">⚙️</div>
+    <div id="install-btn" style="position: absolute; top: 20px; right: 60px; font-size: 1.5rem; cursor: pointer; display: none; z-index: 1001;" onclick="installApp()">📲</div>
+    <div style="position: absolute; top: 20px; right: 20px; font-size: 1.5rem; cursor: pointer; z-index: 1001;" onclick="toggleSettings()">⚙️</div>
 
     <div id="settings-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:300px; background:white; padding:20px; border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.2); z-index:10001;">
         <h3 style="margin-top:0;">🛠️ 환경설정</h3>
@@ -197,9 +236,9 @@
         <div class="room-container">
             <h2 style="color: #6e8efb;">💬 프리톡</h2>
             <div id="room-list"></div>
-            <div style="margin-top:20px; display:flex; gap:10px;">
-                <input id="new-room-input" style="flex:1; padding:12px; border-radius:10px; border:1px solid #ddd;" placeholder="방 이름..." />
-                <button onclick="createNewRoom()" style="padding:10px 20px; background:#a777e3; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">생성</button>
+            <div class="create-area">
+                <input id="new-room-input" placeholder="방 이름..." />
+                <button class="create-btn" onclick="createNewRoom()">생성</button>
             </div>
         </div>
     </div>
@@ -209,11 +248,16 @@
             <div id="room-title" style="font-weight:bold;"></div>
             <button onclick="leaveChat()" style="background:#ff4d4d; color:white; border:none; padding:5px 15px; border-radius:8px; cursor:pointer;">나가기</button>
         </div>
+
         <div id="notice-bar">
-            <div id="notice-content-area" onclick="showFullNotice()"><b>📢 공지</b> <span id="notice-content"></span></div>
+            <div id="notice-content-area" onclick="showFullNotice()">
+                <b>📢 공지</b> <span id="notice-content"></span>
+            </div>
             <span class="close-notice" onclick="closeNotice()">×</span>
         </div>
+
         <ul id="messages"></ul>
+
         <form id="form">
             <input type="file" id="file-input" style="display:none;" onchange="uploadFile(this)" accept="*">
             <button type="button" style="background:none; border:none; font-size:1.2rem; cursor:pointer;" onclick="document.getElementById('file-input').click()">📎</button>
@@ -224,59 +268,77 @@
 
     <div id="footer-bar">
         문의 <strong>제이투코어(J2CORE)</strong> 대표 <strong>정준용</strong>
-        <a href="mailto:jjyong3872@naver.com" class="email-link">📩 jjyong3872@naver.com</a>
+        <a href="mailto:jjyong3872@naver.com" style="color:#0984e3; text-decoration:none; font-weight:bold; margin-left:5px;">📩 jjyong3872@naver.com</a>
     </div>
 
-    <div id="context-menu" style="display: none; position: fixed; width: 150px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000;">
-        <div onclick="setAsNotice()" style="padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f5f5f5;">📌 공지 등록</div>
-        <div onclick="handleDelete()" style="padding: 12px 15px; cursor: pointer; color:red;">🗑️ 삭제</div>
+    <div id="context-menu">
+        <div onclick="setAsNotice()">📌 공지 등록</div>
+        <div onclick="handleReply()">↩️ 답장</div>
+        <div onclick="handleLike()">❤️ 공감</div>
+        <div onclick="handleShare()">📤 공유</div>
+        <div onclick="handleDelete()" style="color:red;">🗑️ 삭제</div>
     </div>
+
+    <div id="image-modal" onclick="this.style.display='none'"><img id="modal-img"></div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let userName = '', currentRoom = '', selectedId = null, selectedText = '';
-        let deferredPrompt; // 설치 프롬프트 저장용
+        let userName = '', currentRoom = '', selectedId = null, selectedSender = '', selectedText = '';
+        let deferredPrompt;
 
-        // [추가] 크롬 설치 로직
+        // 설치 로직
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
+            e.preventDefault(); deferredPrompt = e;
             document.getElementById('install-btn').style.display = 'block';
         });
-
         function installApp() {
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    document.getElementById('install-btn').style.display = 'none';
-                }
-                deferredPrompt = null;
-            });
+            deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('install-btn').style.display = 'none'; });
         }
 
-        // 공지 및 채팅 관련 함수들
+        // 공지 기능
         function setAsNotice() {
             if (!selectedText) return;
             document.getElementById('notice-content').innerText = selectedText;
             document.getElementById('notice-bar').style.display = 'flex';
         }
+        function showFullNotice() { alert("📢 공지 내용:\n\n" + document.getElementById('notice-content').innerText); }
         function closeNotice() { document.getElementById('notice-bar').style.display = 'none'; }
-        
+
+        // 메시지 추가 (파일/이미지 로직 포함 복구)
         function addMessage(data) {
+            if (!data || !data.id) return;
             const list = document.getElementById('messages');
             const item = document.createElement('li');
             item.id = `msg-${data.id}`;
-            const isMe = data.name === userName;
-            item.className = isMe ? 'my-msg' : 'other-msg';
-            
-            let content = data.type === 'image' ? `<img src="${data.text}" style="max-width:100%; border-radius:10px;">` : data.text;
-            item.innerHTML = isMe ? content : `<strong>${data.name}</strong>${content}`;
-            
+
+            let content = '';
+            if (data.type === 'image') {
+                content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; cursor:pointer;" onclick="openImageViewer(this.src)">`;
+            } else if (data.type === 'file') {
+                const fileName = data.fileName || '이름 없는 파일';
+                content = `<a href="${data.text}" download="${fileName}" style="text-decoration:none; color:inherit; background:rgba(0,0,0,0.05); padding:10px; border-radius:10px; display:flex; align-items:center; gap:10px;">
+                            <span>📁</span><span><b>${fileName}</b><br><small>클릭하여 다운로드</small></span></a>`;
+            } else {
+                content = data.text;
+            }
+
+            const timeHtml = `<span class="time">${data.time || ''}</span>`;
+            const readHtml = data.read_count > 0 ? `<span class="read-unread">${data.read_count}</span>` : '';
+
+            if (data.name === userName) {
+                item.className = 'my-msg';
+                item.innerHTML = `${readHtml}${content}<div class="msg-info">${timeHtml}</div>`;
+            } else {
+                item.className = 'other-msg';
+                item.innerHTML = `<strong>${data.name}</strong>${content}<div class="msg-info">${timeHtml}${readHtml}</div>`;
+            }
+
             item.oncontextmenu = (e) => {
                 e.preventDefault();
-                selectedId = data.id; selectedText = data.text;
+                selectedId = data.id; selectedSender = data.name; selectedText = (data.type === 'text') ? data.text : '[파일/이미지]';
                 const menu = document.getElementById('context-menu');
                 menu.style.display = 'block'; menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
             };
@@ -284,25 +346,68 @@
             list.scrollTop = list.scrollHeight;
         }
 
-        socket.on('chat message', (data) => addMessage(data));
+        function openImageViewer(src) { document.getElementById('image-modal').style.display = 'flex'; document.getElementById('modal-img').src = src; }
+
+        // 소켓 이벤트들
+        socket.on('load messages', (messages) => {
+            document.getElementById('list-area').style.display = 'none';
+            document.getElementById('chat-area').style.display = 'flex';
+            document.getElementById('room-title').textContent = currentRoom;
+            document.getElementById('messages').innerHTML = '';
+            if (messages) messages.forEach(addMessage);
+            socket.emit('mark as read');
+        });
+
+        socket.on('chat message', (data) => {
+            addMessage(data);
+            if (data.name !== userName) {
+                socket.emit('mark as read');
+                if (document.getElementById('noti-toggle').checked) {
+                    new Notification(`프리톡 - ${data.name}`, { body: data.text });
+                }
+            }
+        });
+
+        socket.on('all read', () => { document.querySelectorAll('.read-unread').forEach(el => el.style.display = 'none'); });
+        socket.on('message deleted', (id) => { document.getElementById(`msg-${id}`)?.remove(); });
 
         document.getElementById('form').addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('input');
             if (input.value.trim()) {
-                socket.emit('chat message', { room: currentRoom, name: userName, text: input.value });
+                socket.emit('chat message', { room: currentRoom, name: userName, text: input.value, type: 'text' });
                 input.value = '';
             }
         });
+
+        // 파일 업로드
+        function uploadFile(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const isImage = file.type.startsWith('image/');
+                    socket.emit('chat message', {
+                        room: currentRoom, name: userName, text: e.target.result,
+                        type: isImage ? 'image' : 'file', fileName: file.name
+                    });
+                };
+                reader.readAsDataURL(file);
+                input.value = '';
+            }
+        }
+
+        // 방 입장/생성
+        function createNewRoom() {
+            const input = document.getElementById('new-room-input');
+            if (input.value.trim()) enterRoom(input.value.trim());
+        }
 
         function enterRoom(roomName) {
             const nick = prompt("닉네임:");
             if (!nick) return;
             userName = nick; currentRoom = roomName;
             socket.emit('join room', { room: roomName, name: nick });
-            document.getElementById('list-area').style.display = 'none';
-            document.getElementById('chat-area').style.display = 'flex';
-            document.getElementById('room-title').textContent = roomName;
         }
 
         socket.on('room counts', (data) => {
@@ -317,11 +422,11 @@
             }
         });
 
+        // 설정 및 테마
         function toggleSettings() {
             const modal = document.getElementById('settings-modal');
             modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
         }
-
         function changeTheme() {
             const theme = document.getElementById('theme-select').value;
             document.body.classList.remove('dark-mode', 'purple-mode');
@@ -329,12 +434,20 @@
             else if (theme === 'purple') document.body.classList.add('purple-mode');
             localStorage.setItem('freeTalkTheme', theme);
         }
+        function toggleNotification() {
+            if (document.getElementById('noti-toggle').checked) Notification.requestPermission();
+        }
 
+        function handleShare() { navigator.clipboard.writeText(selectedText).then(() => alert("복사 완료!")); }
+        function handleReply() { document.getElementById('input').value = `[${selectedSender}님께 답장]: `; document.getElementById('input').focus(); }
+        function handleDelete() { if (confirm("삭제할까요?")) socket.emit('delete message', selectedId); }
+        function leaveChat() { location.reload(); }
+
+        window.onclick = () => document.getElementById('context-menu').style.display = 'none';
         window.onload = () => {
             const savedTheme = localStorage.getItem('freeTalkTheme');
             if (savedTheme) { document.getElementById('theme-select').value = savedTheme; changeTheme(); }
         };
-        window.onclick = () => document.getElementById('context-menu').style.display = 'none';
     </script>
 </body>
 </html>
