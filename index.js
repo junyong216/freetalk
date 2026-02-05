@@ -62,23 +62,27 @@ io.on('connection', (socket) => {
         }
         allRooms.add(data.room);
         if (data.password && !roomPasswords[data.room]) roomPasswords[data.room] = data.password;
-        
+
+        const isAlreadyIn = socket.rooms.has(data.room);
+
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
 
-        // 과거 메시지 로드 (에러 방지 쿼리)
+        // 1. 과거 메시지는 언제든 다시 보여줌
         db.all("SELECT id, name, text, type, read_count, likes, strftime('%H:%M', created_at, 'localtime') as time FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 50", [data.room], (err, rows) => {
             if (!err) socket.emit('load messages', rows);
         });
 
-        // 입장 알림
-        io.to(data.room).emit('chat message', {
-            id: Date.now(),
-            name: '시스템',
-            text: `${data.name}님이 입장했습니다.`,
-            type: 'system'
-        });
+        // 2. ⭐ 처음 들어올 때만 입장 알림 전송
+        if (!isAlreadyIn) {
+            io.to(data.room).emit('chat message', {
+                id: Date.now(),
+                name: '시스템',
+                text: `${data.name}님이 입장했습니다.`,
+                type: 'system'
+            });
+        }
 
         sendRoomCounts();
     });
@@ -86,14 +90,14 @@ io.on('connection', (socket) => {
     socket.on('chat message', (data) => {
         const roomMembers = io.sockets.adapter.rooms.get(data.room);
         const countInRoom = (roomMembers && roomMembers.size > 1) ? 0 : 1;
-        
+
         db.run("INSERT INTO messages (room, name, text, type, read_count) VALUES (?, ?, ?, ?, ?)",
             [data.room, data.name, data.text, data.type || 'text', countInRoom], function (err) {
                 if (!err) {
                     io.to(data.room).emit('chat message', {
-                        id: this.lastID, 
-                        ...data, 
-                        read_count: countInRoom, 
+                        id: this.lastID,
+                        ...data,
+                        read_count: countInRoom,
                         likes: 0,
                         time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
                     });
