@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
     <title>프리톡 (Free Talk)</title>
+    <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="프리톡로고.png" type="image/png">
     <style>
         body {
@@ -194,6 +195,20 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        // 서비스 워커 등록 (설치 팝업 필수 조건)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+
+        // 설치 팝업 제어
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // 여기서 사용자에게 설치를 유도하는 버튼을 보여줄 수도 있습니다.
+            console.log("설치 가능 상태");
+        });
+        
         const socket = io();
         let userName = '', currentRoom = '';
 

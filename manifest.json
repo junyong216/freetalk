@@ -1,6 +1,10 @@
 {
+  "name": "프리톡",
   "short_name": "프리톡",
-  "name": "프리톡 (free TALK!)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6e8efb",
   "icons": [
     {
       "src": "프리톡로고.png",
@@ -12,9 +16,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#6e8efb",
-  "background_color": "#ffffff"
+  ]
 }
