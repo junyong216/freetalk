@@ -191,7 +191,7 @@
             gap: 10px;
             padding: 10px 15px;
             position: fixed;
-            bottom: 65px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
@@ -392,6 +392,10 @@
             // 즉시 화면 전환
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
+
+            // 🕵️ 푸터 숨기기 추가!
+            document.getElementById('footer-bar').style.display = 'none';
+
             document.getElementById('main-install-btn').style.display = 'none';
             document.getElementById('main-settings-btn').style.display = 'none';
             document.getElementById('room-title').textContent = currentRoom;
@@ -404,6 +408,10 @@
             socket.emit('leave room');
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
+
+            // 🕵️ 푸터 다시 보이기 추가!
+            document.getElementById('footer-bar').style.display = 'block';
+
             document.getElementById('main-settings-btn').style.display = 'block';
             if (deferredPrompt) document.getElementById('main-install-btn').style.display = 'block';
             currentRoom = '';
