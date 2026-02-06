@@ -101,9 +101,18 @@ io.on('connection', (socket) => {
     });
 
     // 3. 채팅 메시지 전송
+    // 3. 채팅 메시지 전송 (이 부분으로 교체)
     socket.on('chat message', (data) => {
         const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-        const initialReadCount = 0;
+
+        // 현재 이 방에 실제 접속 중인 인원수 파악
+        const roomObj = io.sockets.adapter.rooms.get(data.room);
+        const onlineInRoom = roomObj ? roomObj.size : 1;
+
+        // 전체 인원 대비 안 읽은 사람 수 (단순하게 구현 시 1명 나갔으면 1이 뜨게 함)
+        // 여기서는 단순히 '방에 없는 사람 수'를 표현하기 위해 
+        // (이 예제에서는 방 인원 체크 로직에 따라 유동적일 수 있음)
+        const initialReadCount = onlineInRoom > 1 ? 0 : 1;
 
         db.run("INSERT INTO messages (room, name, text, type, read_count, likes) VALUES (?, ?, ?, ?, ?, 0)",
             [data.room, data.name, data.text, data.type || 'text', initialReadCount], function (err) {

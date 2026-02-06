@@ -425,11 +425,17 @@
         }
 
         function goBack() {
+            // 추가: 서버에 방을 나갔음을 알림 (소켓은 유지하되 방만 퇴장)
+            socket.emit('leave room');
+
             currentRoom = '';
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
             document.getElementById('footer-bar').style.display = 'block';
             document.getElementById('main-settings-btn').style.display = 'flex';
+
+            // 메시지 목록 초기화 (다시 들어올 때 새로 불러오기 위함)
+            document.getElementById('messages').innerHTML = '';
         }
 
         function leaveChat() {
