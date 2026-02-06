@@ -148,6 +148,10 @@
             border-top: 1px solid #ddd;
             z-index: 5;
         }
+
+        #context-menu div:hover {
+            background-color: #f5f5f5;
+        }
     </style>
 </head>
 
@@ -195,6 +199,18 @@
     <div id="footer-bar">
         문의 <strong>제이투코어</strong> | <a href="mailto:jjyong3872@naver.com"
             style="text-decoration:none; color:#0984e3; font-weight:bold;">📩 jjyong3872@naver.com</a>
+    </div>
+
+    <div id="context-menu"
+        style="display:none; position:fixed; z-index:5000; background:white; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.2); width:120px; overflow:hidden;">
+        <div onclick="menuAction('reply')"
+            style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">↩️ 답장</div>
+        <div onclick="menuAction('like')"
+            style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">❤️ 공감</div>
+        <div onclick="menuAction('share')"
+            style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📤 공유</div>
+        <div id="menu-delete" onclick="menuAction('delete')"
+            style="padding:10px; cursor:pointer; color:red; font-size:0.9rem;">🗑️ 삭제</div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -248,6 +264,15 @@
             const isMy = (data.name === userName);
             item.className = isMy ? 'my-msg' : 'other-msg';
 
+            // 우클릭 이벤트 리스너 (모바일은 꾹 누르기, PC는 우클릭)
+            item.oncontextmenu = (e) => {
+                e.preventDefault();
+                // 마우스 위치(e.pageX)가 없으면 터치 위치를 잡는 로직 추가
+                const posX = e.pageX || (e.touches ? e.touches[0].pageX : 0);
+                const posY = e.pageY || (e.touches ? e.touches[0].pageY : 0);
+                showContextMenu(posX, posY, data, isMy);
+            };
+
             // 2. 이미지 크기 조절: 최대 높이를 설정하여 너무 크게 보이지 않게 함
             let content = "";
             if (data.type === 'image') {
@@ -265,7 +290,7 @@
             // read_count가 0보다 클 때만 표시
             const readBadge = (data.read_count > 0) ? `<span style="color:#2c3e50; font-size:0.75rem; font-weight:bold; margin-bottom:2px;">${data.read_count}</span>` : '';
 
-            const deleteBtn = isMy ? `<span style="cursor:pointer; font-size:0.7rem; color:red; margin-top:2px;" onclick="deleteMsg(${data.id})">삭제</span>` : '';
+            // const deleteBtn = isMy ? `<span style="cursor:pointer; font-size:0.7rem; color:red; margin-top:2px;" onclick="deleteMsg(${data.id})">삭제</span>` : '';
 
             const info = `<div id="info-${data.id}" style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column; width:50px;">
                 ${readBadge}
@@ -402,6 +427,50 @@
                 target.remove();
             }
         });
+
+        let selectedMsgData = null; // 현재 선택된 메시지 정보 저장
+
+        function showContextMenu(x, y, data, isMy) {
+            const menu = document.getElementById('context-menu');
+            selectedMsgData = data; // 어떤 메시지를 선택했는지 저장
+
+            // 내 메시지가 아니면 삭제 버튼 숨기기
+            document.getElementById('menu-delete').style.display = isMy ? 'block' : 'none';
+
+            menu.style.display = 'block';
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+
+            // 다른 곳 클릭하면 메뉴 닫기
+            document.onclick = () => { menu.style.display = 'none'; };
+        }
+
+        function menuAction(action) {
+            if (!selectedMsgData) return;
+
+            switch (action) {
+                case 'reply':
+                    const input = document.getElementById('input');
+                    input.value = `[${selectedMsgData.name}에게 답장]: `;
+                    input.focus();
+                    break;
+                case 'like':
+                    alert('이 메시지에 공감했습니다! ❤️');
+                    // 나중에 서버에 공감 카운트 올리는 로직 추가 가능
+                    break;
+                case 'share':
+                    const textToCopy = selectedMsgData.type === 'image' ? '[이미지]' : selectedMsgData.text;
+                    navigator.clipboard.writeText(textToCopy);
+                    alert('클립보드에 복사되었습니다.');
+                    break;
+                case 'delete':
+                    if (confirm("삭제하시겠습니까?")) {
+                        socket.emit('delete message', selectedMsgData.id);
+                    }
+                    break;
+            }
+            document.getElementById('context-menu').style.display = 'none';
+        }
     </script>
 </body>
 
