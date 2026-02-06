@@ -56,7 +56,7 @@ function sendUserList(room) {
 io.on('connection', (socket) => {
     sendRoomCounts();
 
-    // 1. 방 입장 처리
+    // 1. 방 입장 처리 (수정된 버전)
     socket.on('join room', (data) => {
         const isAlreadyIn = socket.rooms.has(data.room);
         socket.join(data.room);
@@ -66,27 +66,34 @@ io.on('connection', (socket) => {
         sendRoomCounts();
         sendUserList(data.room);
 
+        // 안 읽은 수 업데이트
         db.run("UPDATE messages SET read_count = MAX(0, read_count - 1) WHERE room = ?", [data.room], (err) => {
             if (!err) {
-            const loadQuery = `
-                SELECT id, name, text, type, room, likes, read_count, 
-                strftime('%H:%M', created_at, 'localtime') as time 
-                FROM messages WHERE room = ? 
-                ORDER BY created_at DESC LIMIT 30
-            `;
-            db.all(loadQuery, [data.room], (err, rows) => {
-                if (!err) socket.emit('load messages', rows.reverse());
-            });
-            io.to(data.room).emit('refresh messages');
-        }
-    });
+                const loadQuery = `
+                    SELECT id, name, text, type, room, likes, read_count, 
+                    strftime('%H:%M', created_at, 'localtime') as time 
+                    FROM messages WHERE room = ? 
+                    ORDER BY created_at DESC LIMIT 30
+                `;
 
-        if (!isAlreadyIn) {
-            io.to(data.room).emit('chat message', {
-                name: '시스템', text: `${data.name}님이 입장했습니다.`, type: 'system', room: data.room
-            });
-        }
-        sendRoomCounts();
+                db.all(loadQuery, [data.room], (err, rows) => {
+                    if (!err) {
+                        // [중요] 1. 과거 메시지를 먼저 보낸다
+                        socket.emit('load messages', rows.reverse());
+
+                        // [중요] 2. 그 다음 "입장했습니다" 시스템 메시지를 보낸다
+                        if (!isAlreadyIn) {
+                            io.to(data.room).emit('chat message', {
+                                name: '시스템',
+                                text: `${data.name}님이 입장했습니다.`,
+                                type: 'system',
+                                room: data.room
+                            });
+                        }
+                    }
+                });
+            }
+        });
     });
 
     // 2. 공감 기능 (join room 밖으로 뺐습니다)
