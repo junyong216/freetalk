@@ -231,15 +231,25 @@
             const list = document.getElementById('messages');
             const item = document.createElement('li');
 
-            // 시스템 메시지 처리 (생략)
+            // 1. 시스템 메시지 (입장/퇴장) 처리
+            // data.name이 '시스템'이거나 data.type이 'system'인 경우
+            if (data.name === '시스템' || data.type === 'system') {
+                item.style.cssText = "align-self:center; background:rgba(0,0,0,0.08); color:#555; font-size:0.8rem; border-radius:20px; padding:5px 15px; margin:10px 0; list-style:none;";
+                item.textContent = data.text;
+                list.appendChild(item);
+                list.scrollTop = list.scrollHeight;
+                return; // 시스템 메시지면 여기서 끝냄
+            }
 
+            // 2. 일반 메시지 처리
             const isMy = (data.name === userName);
             item.className = isMy ? 'my-msg' : 'other-msg';
 
-            // ⭐️ 여기가 핵심! type이 image면 <img> 태그로 렌더링
+            // ⭐️ 핵심: 이미지와 텍스트 구분 렌더링
             let content = "";
             if (data.type === 'image') {
-                content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; display:block;" onerror="this.src='이미지로드실패경로';">`;
+                // 이미지는 <img> 태그로 감싸야 텍스트 폭탄이 안 됩니다.
+                content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; display:block;" onclick="window.open(this.src)">`;
             } else {
                 content = data.text || "";
             }
@@ -302,7 +312,13 @@
             if (file && currentRoom) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    socket.emit('chat message', { room: currentRoom, name: userName, text: e.target.result, type: 'image' });
+                    // ⭐️ 반드시 type: 'image'를 넣어서 보냅니다.
+                    socket.emit('chat message', {
+                        room: currentRoom,
+                        name: userName,
+                        text: e.target.result,
+                        type: 'image'
+                    });
                 };
                 reader.readAsDataURL(file);
             }
