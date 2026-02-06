@@ -66,7 +66,8 @@ io.on('connection', (socket) => {
         sendRoomCounts();
         sendUserList(data.room);
 
-        db.run("UPDATE messages SET read_count = MAX(0, read_count - 1) WHERE room = ?", [data.room], () => {
+        db.run("UPDATE messages SET read_count = MAX(0, read_count - 1) WHERE room = ?", [data.room], (err) => {
+            if (!err) {
             const loadQuery = `
                 SELECT id, name, text, type, room, likes, read_count, 
                 strftime('%H:%M', created_at, 'localtime') as time 
@@ -77,7 +78,8 @@ io.on('connection', (socket) => {
                 if (!err) socket.emit('load messages', rows.reverse());
             });
             io.to(data.room).emit('refresh messages');
-        });
+        }
+    });
 
         if (!isAlreadyIn) {
             io.to(data.room).emit('chat message', {
@@ -100,19 +102,28 @@ io.on('connection', (socket) => {
         });
     });
 
-    // 3. 채팅 메시지 전송
-    // 3. 채팅 메시지 전송 (이 부분으로 교체)
     socket.on('chat message', (data) => {
         const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-        // 현재 이 방에 실제 접속 중인 인원수 파악
-        const roomObj = io.sockets.adapter.rooms.get(data.room);
-        const onlineInRoom = roomObj ? roomObj.size : 1;
+        // 해당 방에 소켓 연결은 되어있지만, '보고 있는 화면(nowRoom)'이 다른 사람 수 계산
+        const roomName = data.room;
+        const allSocketsInRoom = io.sockets.adapter.rooms.get(roomName);
 
-        // 전체 인원 대비 안 읽은 사람 수 (단순하게 구현 시 1명 나갔으면 1이 뜨게 함)
-        // 여기서는 단순히 '방에 없는 사람 수'를 표현하기 위해 
-        // (이 예제에서는 방 인원 체크 로직에 따라 유동적일 수 있음)
-        const initialReadCount = onlineInRoom > 1 ? 0 : 1;
+        let activeUsers = 0;
+        if (allSocketsInRoom) {
+            allSocketsInRoom.forEach(socketId => {
+                const s = io.sockets.sockets.get(socketId);
+                // 핵심: 소켓이 연결된 방(room)과 현재 보고 있는 방(nowRoom)이 일치해야 '읽음'
+                if (s.nowRoom === roomName) {
+                    activeUsers++;
+                }
+            });
+        }
+
+        // 안 읽은 사람 수 = (방에 있는 전체 소켓 수 - 현재 활성화된 유저 수)
+        // 혹은 더 직관적으로: "지금 안 보고 있는 사람이 있으면 1" (1:1 채팅 기준)
+        const totalInRoom = allSocketsInRoom ? allSocketsInRoom.size : 1;
+        const initialReadCount = Math.max(0, totalInRoom - activeUsers);
 
         db.run("INSERT INTO messages (room, name, text, type, read_count, likes) VALUES (?, ?, ?, ?, ?, 0)",
             [data.room, data.name, data.text, data.type || 'text', initialReadCount], function (err) {
@@ -151,6 +162,10 @@ io.on('connection', (socket) => {
             sendUserList(roomToLeave); // 백업된 방 이름으로 유저 리스트 갱신
             sendRoomCounts();
         }
+    });
+
+    socket.on('update active room', (roomName) => {
+        socket.nowRoom = roomName; // 소켓 객체에 현재 보고 있는 방 상태 저장
     });
 
     socket.on('disconnect', () => {

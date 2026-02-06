@@ -409,11 +409,12 @@
 
         // 기존 enterRoom 함수 수정
         function enterRoom(roomName) {
-            if (!userName) {
-                setNickname(); // 분리한 함수 호출
-                if (!userName) return; // 취소했을 경우 중단
-            }
+            if (!userName) { setNickname(); if (!userName) return; }
             currentRoom = roomName;
+
+            // 서버에 "나 이제 이 방 화면 보고 있음"이라고 알림
+            socket.nowRoom = roomName; // 클라이언트 변수 저장
+            socket.emit('update active room', roomName);
 
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
@@ -425,17 +426,13 @@
         }
 
         function goBack() {
-            // 추가: 서버에 방을 나갔음을 알림 (소켓은 유지하되 방만 퇴장)
-            socket.emit('leave room');
+            // 서버에 "나 이제 채팅방 안 보고 목록에 있음"이라고 알림
+            socket.nowRoom = null;
+            socket.emit('update active room', null);
 
             currentRoom = '';
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
-            document.getElementById('footer-bar').style.display = 'block';
-            document.getElementById('main-settings-btn').style.display = 'flex';
-
-            // 메시지 목록 초기화 (다시 들어올 때 새로 불러오기 위함)
-            document.getElementById('messages').innerHTML = '';
         }
 
         function leaveChat() {
@@ -449,7 +446,11 @@
         function createNewRoom() { const val = document.getElementById('new-room-input').value; if (val) enterRoom(val); }
 
         socket.on('refresh messages', () => {
-            console.log("읽음 처리 신호 수신 (메모리 최적화를 위해 수동 갱신 권장)");
+            // 내가 현재 방에 있다면, 서버에 다시 메시지를 불러오라고 요청하거나
+            // 간단하게 join room 이벤트를 다시 활용해 메시지를 새로 고칩니다.
+            if (currentRoom) {
+                socket.emit('join room', { room: currentRoom, name: userName });
+            }
         });
 
         // 서버에 삭제 요청
