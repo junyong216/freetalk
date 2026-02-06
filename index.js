@@ -125,4 +125,17 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => { sendRoomCounts(); });
 });
 
+socket.on('like message', (id) => {
+    db.run("UPDATE messages SET likes = likes + 1 WHERE id = ?", [id], (err) => {
+        if (!err) {
+            // DB에서 최신 likes 값을 가져와서 해당 방 전체에 알림
+            db.get("SELECT id, likes, room FROM messages WHERE id = ?", [id], (err, row) => {
+                if (!err && row) {
+                    io.to(row.room).emit('update likes', { id: row.id, likes: row.likes });
+                }
+            });
+        }
+    });
+});
+
 server.listen(3000, () => { console.log('Server is running on port 3000'); });
