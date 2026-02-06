@@ -265,10 +265,15 @@
             // read_count가 0보다 클 때만 표시
             const readBadge = (data.read_count > 0) ? `<span style="color:#2c3e50; font-size:0.75rem; font-weight:bold; margin-bottom:2px;">${data.read_count}</span>` : '';
 
-            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column; width:50px;">
+            const deleteBtn = isMy ? `<span style="cursor:pointer; font-size:0.7rem; color:red; margin-top:2px;" onclick="deleteMsg(${data.id})">삭제</span>` : '';
+
+            const info = `<div id="info-${data.id}" style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column; width:50px;">
                 ${readBadge}
                 <span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
-        </div>`;
+                ${deleteBtn}
+            </div>`;
+
+            item.id = `msg-${data.id}`; // 메시지에 고유 ID 부여
 
             item.innerHTML = isMy ? `${content}${info}` : `<small style="display:block; margin-bottom:4px; color:#777;">${data.name}</small>${content}${info}`;
 
@@ -381,6 +386,21 @@
 
         socket.on('refresh messages', () => {
             console.log("읽음 처리 신호 수신 (메모리 최적화를 위해 수동 갱신 권장)");
+        });
+
+        // 서버에 삭제 요청
+        function deleteMsg(id) {
+            if (confirm("메시지를 삭제하시겠습니까?")) {
+                socket.emit('delete message', id);
+            }
+        }
+
+        // 서버로부터 삭제 신호 수신 시 화면에서 제거
+        socket.on('message deleted', (id) => {
+            const target = document.getElementById(`msg-${id}`);
+            if (target) {
+                target.remove();
+            }
         });
     </script>
 </body>

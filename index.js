@@ -102,6 +102,17 @@ io.on('connection', (socket) => {
             });
     });
 
+    // 메시지 삭제 요청 처리
+    socket.on('delete message', (messageId) => {
+        // DB에서 삭제
+        db.run("DELETE FROM messages WHERE id = ?", [messageId], (err) => {
+            if (!err) {
+                // 방에 있는 모든 사람에게 삭제된 메시지 ID 전송
+                io.emit('message deleted', messageId);
+            }
+        });
+    });
+
     socket.on('leave room', () => {
         if (socket.room) {
             io.to(socket.room).emit('chat message', {
