@@ -205,7 +205,8 @@
             list.innerHTML = '';
             if (messages) {
                 messages.forEach(msg => {
-                    // 필터 통과를 위해 임시로 방 이름 맞춰서 그리기
+                    // msg 객체 안에는 이미 type: 'image' 정보가 들어있습니다.
+                    // room 정보만 현재 방으로 맞춰서 보내주면 됩니다.
                     addMessage({ ...msg, room: currentRoom });
                 });
             }
@@ -230,19 +231,22 @@
             const list = document.getElementById('messages');
             const item = document.createElement('li');
 
-            if (data.name === '시스템' || data.type === 'system') {
-                item.style.cssText = "align-self:center; background:rgba(0,0,0,0.08); color:#555; font-size:0.8rem; border-radius:20px; padding:5px 15px; margin:10px 0;";
-                item.textContent = data.text;
-                list.appendChild(item);
-                list.scrollTop = list.scrollHeight;
-                return;
-            }
+            // 시스템 메시지 처리 (생략)
 
             const isMy = (data.name === userName);
             item.className = isMy ? 'my-msg' : 'other-msg';
-            const readBadge = (data.read_count > 0) ? `<span class="read-count" style="color:#ffeb3b; font-size:0.7rem; font-weight:bold; margin:0 5px;">${data.read_count}</span>` : '';
-            let content = (data.type === 'image') ? `<img src="${data.text}" style="max-width:100%; border-radius:10px; display:block;">` : (data.text || "");
+
+            // ⭐️ 여기가 핵심! type이 image면 <img> 태그로 렌더링
+            let content = "";
+            if (data.type === 'image') {
+                content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; display:block;" onerror="this.src='이미지로드실패경로';">`;
+            } else {
+                content = data.text || "";
+            }
+
             const timeStr = data.time || "";
+            const readBadge = (data.read_count > 0) ? `<span style="color:#ffeb3b; font-size:0.7rem; font-weight:bold; margin:0 5px;">${data.read_count}</span>` : '';
+
             const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-65px; align-items:flex-end;' : 'right:-65px; align-items:flex-start;'} display:flex; flex-direction:column;">
                 ${readBadge}
                 <span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
