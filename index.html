@@ -255,9 +255,10 @@
 
         socket.on('refresh messages', () => {
             // 현재 방에 다시 'join room'을 보내서 최신 read_count가 반영된 내역을 받아옴
-            socket.emit('join room', { room: currentRoom, name: userName });
+            console.log("읽음 상태 갱신 신호 수신 (메모리 보호를 위해 자동 리로드 중단)");
+            // socket.emit('join room', { room: currentRoom, name: userName });
         });
-        
+
         // [수정 2] 방 입장 로직 순서 정렬
         function enterRoom(roomName) {
             if (!userName) {

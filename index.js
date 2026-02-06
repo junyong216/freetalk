@@ -56,10 +56,11 @@ io.on('connection', (socket) => {
             const loadQuery = `
             SELECT id, name, text, type, room, read_count, 
             strftime('%H:%M', created_at, 'localtime') as time 
-            FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100
-            `;
+            FROM messages WHERE room = ? 
+            ORDER BY created_at DESC LIMIT 30
+        `;
             db.all(loadQuery, [data.room], (err, rows) => {
-                if (!err) socket.emit('load messages', rows);
+                if (!err) socket.emit('load messages', rows.reverse());
             });
 
             // 방 사람들에게 숫자가 바뀌었다고 알림
