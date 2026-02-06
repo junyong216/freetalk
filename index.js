@@ -79,17 +79,12 @@ io.on('connection', (socket) => {
     socket.on('chat message', (data) => {
         const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-        // 방의 현재 인원 확인
+        // 방의 현재 인원 확인 (디버깅용으로 두셔도 좋고, 안 쓰시면 지워도 됩니다)
         const room = io.sockets.adapter.rooms.get(data.room);
-        const roomSize = room ? room.size : 1;
 
-        // ⭐️ 로직 변경: (방 전체 인원) - (현재 접속 중인 인원) = 아직 안 읽은 사람 수
-        // 하지만 지금은 "실시간으로 보고 있는 사람"을 읽음 처리해야 하므로 
-        // 기본적으로 모두가 보고 있다고 가정하면 0이 되어야 합니다.
-        // 만약 "나를 제외한 아무도 없다면" 1이 뜨는 게 맞습니다.
-
-        // [단순화된 로직]: 방에 나 혼자면 1, 둘 이상이면 0 (상대방이 즉시 읽음 처리)
-        const initialReadCount = roomSize > 1 ? 0 : 1;
+        // ⭐️ 수정: 할당 연산자(=) 오류 수정 및 단순화
+        // 나 혼자 있든 둘이 있든, 현재 접속자는 즉시 읽은 것이므로 0으로 시작합니다.
+        const initialReadCount = 0;
 
         db.run("INSERT INTO messages (room, name, text, type, read_count) VALUES (?, ?, ?, ?, ?)",
             [data.room, data.name, data.text, data.type || 'text', initialReadCount], function (err) {
