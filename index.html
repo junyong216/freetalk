@@ -152,6 +152,29 @@
         #context-menu div:hover {
             background-color: #f5f5f5;
         }
+
+        .like-badge {
+            position: absolute;
+            bottom: -10px;
+            right: 5px;
+            background: white;
+            border: 1px solid #ff4d4d;
+            border-radius: 10px;
+            padding: 2px 5px;
+            font-size: 0.7rem;
+            color: #ff4d4d;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .my-msg .like-badge {
+            right: auto;
+            left: 5px;
+        }
     </style>
 </head>
 
@@ -289,8 +312,15 @@
                 <span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
             </div>`;
 
+            const likeHtml = `<div id="like-${data.id}" class="like-badge" 
+                      style="display: ${data.likes > 0 ? 'flex' : 'none'};" 
+                      onclick="socket.emit('like message', ${data.id})">
+                      ❤️ <span>${data.likes || 0}</span>
+                    </div>`;
+
             item.id = `msg-${data.id}`;
-            item.innerHTML = isMy ? `${content}${info}` : `<small style="display:block; margin-bottom:4px; color:#777;">${data.name}</small>${content}${info}`;
+            // item.innerHTML 부분에 ${likeHtml}을 추가합니다.
+            item.innerHTML = isMy ? `${content}${info}${likeHtml}` : `<small style="display:block; margin-bottom:4px; color:#777;">${data.name}</small>${content}${info}${likeHtml}`;
 
             list.appendChild(item);
             list.scrollTop = list.scrollHeight;
