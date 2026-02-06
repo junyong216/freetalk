@@ -240,9 +240,11 @@
 
             const isMy = (data.name === userName);
             item.className = isMy ? 'my-msg' : 'other-msg';
+            const readBadge = (data.read_count > 0) ? `<span class="read-count" style="color:#ffeb3b; font-size:0.7rem; font-weight:bold; margin:0 5px;">${data.read_count}</span>` : '';
             let content = (data.type === 'image') ? `<img src="${data.text}" style="max-width:100%; border-radius:10px; display:block;">` : (data.text || "");
             const timeStr = data.time || "";
-            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-50px; align-items:flex-end;' : 'right:-50px; align-items:flex-start;'} display:flex; flex-direction:column;">
+            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-65px; align-items:flex-end;' : 'right:-65px; align-items:flex-start;'} display:flex; flex-direction:column;">
+                ${readBadge}
                 <span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
             </div>`;
 
@@ -251,6 +253,11 @@
             list.scrollTop = list.scrollHeight;
         }
 
+        socket.on('refresh messages', () => {
+            // 현재 방에 다시 'join room'을 보내서 최신 read_count가 반영된 내역을 받아옴
+            socket.emit('join room', { room: currentRoom, name: userName });
+        });
+        
         // [수정 2] 방 입장 로직 순서 정렬
         function enterRoom(roomName) {
             if (!userName) {

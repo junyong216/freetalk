@@ -43,54 +43,54 @@ io.on('connection', (socket) => {
     sendRoomCounts();
 
     socket.on('join room', (data) => {
-        // 1. 이미 이 방에 들어와 있는지 확인
         const isAlreadyIn = socket.rooms.has(data.room);
-
-        // 2. 새 방 입장 (이미 입장해 있다면 중복 입장되지 않으니 안심하세요)
         socket.join(data.room);
         socket.userName = data.name;
-        socket.room = data.room; // 현재 보고 있는 방 표시용
+        socket.room = data.room;
 
-        // 3. 해당 방 메시지 불러오기
-        const loadQuery = `
-        SELECT id, name, text, type, fileName, room, read_count, 
-        strftime('%H:%M', created_at, 'localtime') as time 
-        FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100
-        `;
+        // ⭐️ [추가] 방에 들어올 때, 이 방의 모든 메시지 읽음 처리 (나를 제외한 남은 인원수 업데이트)
+        // 실제로는 더 정교해야 하지만, 간단하게 '내가 들어왔으니 안 읽은 사람 수 - 1' 처리
+        db.run("UPDATE messages SET read_count = MAX(0, read_count - 1) WHERE room = ?", [data.room], () => {
 
-        db.all(loadQuery, [data.room], (err, rows) => {
-            if (!err) socket.emit('load messages', rows); // 클라이언트로 전송
+            // 그 후 메시지 불러오기
+            const loadQuery = `
+            SELECT id, name, text, type, room, read_count, 
+            strftime('%H:%M', created_at, 'localtime') as time 
+            FROM messages WHERE room = ? ORDER BY created_at ASC LIMIT 100
+            `;
+            db.all(loadQuery, [data.room], (err, rows) => {
+                if (!err) socket.emit('load messages', rows);
+            });
+
+            // 방 사람들에게 숫자가 바뀌었다고 알림
+            io.to(data.room).emit('refresh messages');
         });
 
-        // 4. 시스템 메시지 (정말 '처음' 들어왔을 때만 보냄)
         if (!isAlreadyIn) {
             io.to(data.room).emit('chat message', {
                 name: '시스템', text: `${data.name}님이 입장했습니다.`, type: 'system', room: data.room
             });
         }
-
         sendRoomCounts();
     });
 
     socket.on('chat message', (data) => {
-        const timeStr = new Date().toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        });
+        const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-        // ⭐️ data.room이 있는지 확인하고 저장합니다.
+        // ⭐️ [수정] 메시지 저장 시 read_count를 (현재 방 인원수 - 1)로 설정
+        const roomSize = io.sockets.adapter.rooms.get(data.room)?.size || 1;
+        const initialReadCount = roomSize - 1; // 나를 뺀 나머지 인원
+
         db.run("INSERT INTO messages (room, name, text, type, read_count) VALUES (?, ?, ?, ?, ?)",
-            [data.room, data.name, data.text, data.type || 'text', 0], function (err) {
+            [data.room, data.name, data.text, data.type || 'text', initialReadCount], function (err) {
                 if (!err) {
-                    // 해당 방(data.room)에 있는 사람들에게만 메시지를 보냅니다.
                     io.to(data.room).emit('chat message', {
                         id: this.lastID,
                         name: data.name,
                         text: data.text,
                         type: data.type || 'text',
                         time: timeStr,
-                        read_count: 0,
+                        read_count: initialReadCount,
                         room: data.room
                     });
                 }
