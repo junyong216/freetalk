@@ -251,7 +251,10 @@
             // 2. 이미지 크기 조절: 최대 높이를 설정하여 너무 크게 보이지 않게 함
             let content = "";
             if (data.type === 'image') {
-                content = `<img src="${data.text}" style="max-width:200px; max-height:300px; border-radius:10px; display:block; object-fit:contain;" onclick="window.open(this.src)">`;
+                // ⭐️ onclick 부분을 아래와 같이 수정하세요.
+                content = `<img src="${data.text}" 
+                style="max-width:200px; max-height:300px; border-radius:10px; display:block; object-fit:contain; cursor:pointer;" 
+                onclick="openImageInNewTab('${data.text}')">`;
             } else {
                 content = `<span>${data.text || ""}</span>`;
             }
@@ -271,6 +274,22 @@
 
             list.appendChild(item);
             list.scrollTop = list.scrollHeight;
+        }
+
+        // 이미지를 새 탭에서 크게 보기 위한 함수
+        function openImageInNewTab(base64Data) {
+            const newWindow = window.open();
+            if (newWindow) {
+                newWindow.document.write(`
+            <html>
+                <body style="margin:0; display:flex; justify-content:center; align-items:center; background:#000;">
+                    <img src="${base64Data}" style="max-width:100%; max-height:100%; object-fit:contain;">
+                </body>
+            </html>
+        `);
+            } else {
+                alert("팝업이 차단되었습니다. 팝업 허용을 설정해 주세요.");
+            }
         }
 
         // 전송 버튼 클릭 시 실행
