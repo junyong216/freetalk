@@ -199,20 +199,22 @@
         const socket = io();
         let userName = '', currentRoom = '';
 
-        // [수정 1] 과거 내역 로딩 시 무조건 그리게 함
+        // [수정] 과거 내역 로딩
         socket.on('load messages', (messages) => {
             const list = document.getElementById('messages');
             list.innerHTML = '';
             if (messages) {
                 messages.forEach(msg => {
-                    // msg 객체 안에는 이미 type: 'image' 정보가 들어있습니다.
-                    // room 정보만 현재 방으로 맞춰서 보내주면 됩니다.
+                    // 서버에서 온 데이터의 타입을 유지하며 출력
                     addMessage({ ...msg, room: currentRoom });
                 });
             }
         });
 
-        socket.on('chat message', (data) => { addMessage(data); });
+        socket.on('chat message', (data) => {
+            console.log("메시지 수신:", data); // 디버깅용
+            addMessage(data);
+        });
 
         socket.on('room counts', (data) => {
             const list = document.getElementById('room-list');
@@ -231,56 +233,81 @@
             const list = document.getElementById('messages');
             const item = document.createElement('li');
 
-            // 1. 시스템 메시지 (입장/퇴장) 처리
-            // data.name이 '시스템'이거나 data.type이 'system'인 경우
+            // 1. 시스템 메시지 처리 (닉네임 없이 중앙 정렬)
             if (data.name === '시스템' || data.type === 'system') {
-                item.style.cssText = "align-self:center; background:rgba(0,0,0,0.08); color:#555; font-size:0.8rem; border-radius:20px; padding:5px 15px; margin:10px 0; list-style:none;";
+                item.style.cssText = "align-self:center; background:rgba(0,0,0,0.08); color:#555; font-size:0.8rem; border-radius:20px; padding:5px 15px; margin:10px 0; text-align:center;";
                 item.textContent = data.text;
                 list.appendChild(item);
                 list.scrollTop = list.scrollHeight;
-                return; // 시스템 메시지면 여기서 끝냄
+                return;
             }
 
-            // 2. 일반 메시지 처리
+            // 2. 일반 메시지 레이아웃 설정
             const isMy = (data.name === userName);
             item.className = isMy ? 'my-msg' : 'other-msg';
+            item.style.listStyle = "none"; // 불필요한 점 제거
 
-            // ⭐️ 핵심: 이미지와 텍스트 구분 렌더링
+            // 3. 내용 결정 (이미지 vs 텍스트)
             let content = "";
             if (data.type === 'image') {
-                // 이미지는 <img> 태그로 감싸야 텍스트 폭탄이 안 됩니다.
                 content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; display:block;" onclick="window.open(this.src)">`;
             } else {
-                content = data.text || "";
+                content = `<span>${data.text || ""}</span>`;
             }
 
             const timeStr = data.time || "";
-            const readBadge = (data.read_count > 0) ? `<span style="color:#ffeb3b; font-size:0.7rem; font-weight:bold; margin:0 5px;">${data.read_count}</span>` : '';
+            const readBadge = (data.read_count > 0) ? `<span style="color:#ffeb3b; font-size:0.7rem; font-weight:bold; margin-bottom:2px;">${data.read_count}</span>` : '';
 
-            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-65px; align-items:flex-end;' : 'right:-65px; align-items:flex-start;'} display:flex; flex-direction:column;">
-                ${readBadge}
-                <span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
-            </div>`;
+            // 4. 시간 및 읽음 숫자 (위치 고정)
+            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column; width:50px;">
+            ${readBadge}
+            <span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
+        </div>`;
 
             item.innerHTML = isMy ? `${content}${info}` : `<small style="display:block; margin-bottom:4px; color:#777;">${data.name}</small>${content}${info}`;
+
             list.appendChild(item);
             list.scrollTop = list.scrollHeight;
         }
 
-        socket.on('refresh messages', () => {
-            // 현재 방에 다시 'join room'을 보내서 최신 read_count가 반영된 내역을 받아옴
-            console.log("읽음 상태 갱신 신호 수신 (메모리 보호를 위해 자동 리로드 중단)");
-            // socket.emit('join room', { room: currentRoom, name: userName });
+        // 전송 버튼 클릭 시 실행
+        document.getElementById('form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('input');
+            if (input.value.trim() && currentRoom) {
+                socket.emit('chat message', {
+                    room: currentRoom,
+                    name: userName,
+                    text: input.value,
+                    type: 'text' // 타입 명시
+                });
+                input.value = '';
+            }
         });
 
-        // [수정 2] 방 입장 로직 순서 정렬
+        function uploadFile(target) {
+            const file = target.files[0];
+            if (file && currentRoom) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    socket.emit('chat message', {
+                        room: currentRoom,
+                        name: userName,
+                        text: e.target.result,
+                        type: 'image'
+                    });
+                };
+                reader.readAsDataURL(file);
+                target.value = ''; // 같은 파일 다시 올릴 수 있게 초기화
+            }
+        }
+
         function enterRoom(roomName) {
             if (!userName) {
                 userName = prompt("닉네임:");
                 if (!userName) return;
             }
-            currentRoom = roomName; // 이름 먼저 설정
-
+            currentRoom = roomName;
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
             document.getElementById('footer-bar').style.display = 'none';
@@ -291,41 +318,19 @@
         }
 
         function goBack() {
-            currentRoom = ''; // 목록으로 갈 땐 비우기
+            currentRoom = '';
             document.getElementById('list-area').style.display = 'flex';
             document.getElementById('chat-area').style.display = 'none';
             document.getElementById('footer-bar').style.display = 'block';
             document.getElementById('main-settings-btn').style.display = 'flex';
         }
 
-        document.getElementById('form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const input = document.getElementById('input');
-            if (input.value.trim() && currentRoom) {
-                socket.emit('chat message', { room: currentRoom, name: userName, text: input.value });
-                input.value = '';
-            }
-        });
-
-        function uploadFile(target) {
-            const file = target.files[0];
-            if (file && currentRoom) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    // ⭐️ 반드시 type: 'image'를 넣어서 보냅니다.
-                    socket.emit('chat message', {
-                        room: currentRoom,
-                        name: userName,
-                        text: e.target.result,
-                        type: 'image'
-                    });
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function leaveChat() { if (confirm("나갈까요?")) { socket.emit('leave room'); currentRoom = ''; goBack(); } }
+        function leaveChat() { if (confirm("나갈까요?")) { socket.emit('leave room'); goBack(); } }
         function createNewRoom() { const val = document.getElementById('new-room-input').value; if (val) enterRoom(val); }
+
+        socket.on('refresh messages', () => {
+            console.log("읽음 처리 신호 수신 (메모리 최적화를 위해 수동 갱신 권장)");
+        });
     </script>
 </body>
 
