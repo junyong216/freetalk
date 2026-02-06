@@ -5,8 +5,9 @@ const sqlite3 = require('sqlite3').verbose();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
-
+const io = new Server(server, {
+    maxHttpBufferSize: 5e7 // 10MB로 용량 제한 확대 (1e7 = 10,000,000 bytes)
+});
 app.use(express.static(__dirname));
 
 const db = new sqlite3.Database('./chat_v2.db');
