@@ -173,10 +173,11 @@
             <div style="display:flex; align-items:center; gap:10px;">
                 <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem;">⬅️</span>
                 <div id="room-title" style="font-weight:bold;"></div>
+                <span onclick="setNickname()"
+                    style="cursor:pointer; font-size:0.9rem; background:#eee; padding:2px 8px; border-radius:5px; margin-left:5px;">닉네임 변경</span>
             </div>
             <button onclick="leaveChat()"
-                style="background:#ff4d4d; color:white; border:none; padding:7px 15px; border-radius:8px; font-weight:bold;">방
-                나가기</button>
+                style="background:#ff4d4d; color:white; border:none; padding:7px 15px; border-radius:8px; font-weight:bold;">방 나가기</button>
         </div>
         <ul id="messages"></ul>
         <form id="form">
@@ -302,12 +303,34 @@
             }
         }
 
+        // 닉네임 설정/변경 함수
+        function setNickname() {
+            const newName = prompt("새로운 닉네임을 입력하세요:", userName || "");
+            if (newName && newName.trim()) {
+                const oldName = userName;
+                userName = newName.trim();
+
+                // 만약 방에 입장해 있는 상태에서 이름을 바꾼다면 서버에 알림 (선택 사항)
+                if (currentRoom && oldName) {
+                    socket.emit('chat message', {
+                        room: currentRoom,
+                        name: '시스템',
+                        text: `${oldName}님이 닉네임을 ${userName}님으로 변경했습니다.`,
+                        type: 'system'
+                    });
+                }
+                alert(`닉네임이 '${userName}'(으)로 설정되었습니다.`);
+            }
+        }
+
+        // 기존 enterRoom 함수 수정
         function enterRoom(roomName) {
             if (!userName) {
-                userName = prompt("닉네임:");
-                if (!userName) return;
+                setNickname(); // 분리한 함수 호출
+                if (!userName) return; // 취소했을 경우 중단
             }
             currentRoom = roomName;
+
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
             document.getElementById('footer-bar').style.display = 'none';
@@ -325,7 +348,14 @@
             document.getElementById('main-settings-btn').style.display = 'flex';
         }
 
-        function leaveChat() { if (confirm("나갈까요?")) { socket.emit('leave room'); goBack(); } }
+        function leaveChat() {
+            if (confirm("방을 나가시겠습니까? (닉네임 설정이 초기화됩니다)")) {
+                socket.emit('leave room');
+                userName = '';    // ⭐️ 닉네임 초기화
+                currentRoom = ''; // 현재 방 초기화
+                goBack();         // 목록 화면으로 이동
+            }
+        }
         function createNewRoom() { const val = document.getElementById('new-room-input').value; if (val) enterRoom(val); }
 
         socket.on('refresh messages', () => {
