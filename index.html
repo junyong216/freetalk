@@ -200,6 +200,8 @@
             <div style="display:flex; align-items:center; gap:10px;">
                 <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem;">⬅️</span>
                 <div id="room-title" style="font-weight:bold;"></div>
+                <span onclick="toggleUserList()" style="cursor:pointer; font-size:0.9rem; margin-left:10px;">👤 <span
+                        id="user-count-badge">0</span></span>
                 <span onclick="setNickname()"
                     style="cursor:pointer; font-size:0.9rem; background:#eee; padding:2px 8px; border-radius:5px; margin-left:5px;">닉네임
                     변경</span>
@@ -217,6 +219,16 @@
             <button type="submit"
                 style="background:#6e8efb; color:white; border:none; padding:10px 20px; border-radius:20px; font-weight:bold;">전송</button>
         </form>
+    </div>
+
+    <div id="user-list-modal"
+        style="display:none; position:absolute; top:60px; right:10px; background:white; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:150px; z-index:100; padding:10px;">
+        <div
+            style="font-weight:bold; font-size:0.8rem; border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:5px;">
+            접속자 명단</div>
+        <ul id="user-names"
+            style="list-style:none; padding:0; margin:0; font-size:0.85rem; color:#555; max-height:200px; overflow-y:auto;">
+        </ul>
     </div>
 
     <div id="footer-bar">
@@ -291,8 +303,9 @@
             // 우클릭 이벤트
             item.oncontextmenu = (e) => {
                 e.preventDefault();
-                const posX = e.pageX || (e.touches ? e.touches[0].pageX : 0);
-                const posY = e.pageY || (e.touches ? e.touches[0].pageY : 0);
+                // e.clientX, e.clientY가 모바일/PC 모두에서 더 범용적입니다.
+                const posX = e.clientX;
+                const posY = e.clientY;
                 showContextMenu(posX, posY, data, isMy);
             };
 
@@ -492,6 +505,28 @@
             }
             document.getElementById('context-menu').style.display = 'none';
         }
+
+        function toggleUserList() {
+            const modal = document.getElementById('user-list-modal');
+            modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // 서버에서 실시간 유저 리스트 수신
+        socket.on('user list', (users) => {
+            const list = document.getElementById('user-names');
+            const badge = document.getElementById('user-count-badge');
+
+            badge.textContent = users.length; // 상단 배지 숫자 업데이트
+            list.innerHTML = '';
+
+            users.forEach(name => {
+                const li = document.createElement('li');
+                li.style.padding = '3px 0';
+                // 내 이름 옆에는 (나) 표시
+                li.textContent = name === userName ? `${name} (나)` : name;
+                list.appendChild(li);
+            });
+        });
 
         // 서버에서 공감 업데이트 신호를 받았을 때 화면 갱신
         socket.on('update likes', (data) => {

@@ -6,7 +6,7 @@ const sqlite3 = require('sqlite3').verbose();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    maxHttpBufferSize: 5e7 
+    maxHttpBufferSize: 5e7
 });
 app.use(express.static(__dirname));
 
@@ -39,6 +39,20 @@ function sendRoomCounts() {
     io.emit('room counts', { roomCounts });
 }
 
+function sendUserList(room) {
+    const sockets = io.sockets.adapter.rooms.get(room);
+    const userList = [];
+    if (sockets) {
+        for (const socketId of sockets) {
+            const s = io.sockets.sockets.get(socketId);
+            if (s && s.userName) {
+                userList.push(s.userName);
+            }
+        }
+    }
+    io.to(room).emit('user list', userList);
+}
+
 io.on('connection', (socket) => {
     sendRoomCounts();
 
@@ -48,6 +62,9 @@ io.on('connection', (socket) => {
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
+
+        sendRoomCounts();
+        sendUserList(data.room);
 
         db.run("UPDATE messages SET read_count = MAX(0, read_count - 1) WHERE room = ?", [data.room], () => {
             const loadQuery = `
@@ -114,17 +131,29 @@ io.on('connection', (socket) => {
 
     // 5. 방 나가기 및 연결 끊김
     socket.on('leave room', () => {
-        if (socket.room) {
-            io.to(socket.room).emit('chat message', {
-                name: '시스템', text: `${socket.userName}님이 퇴장했습니다.`, type: 'system', room: socket.room
+        const roomToLeave = socket.room; // 현재 방 이름을 백업
+        if (roomToLeave) {
+            io.to(roomToLeave).emit('chat message', {
+                name: '시스템', text: `${socket.userName}님이 퇴장했습니다.`, type: 'system', room: roomToLeave
             });
-            socket.leave(socket.room);
+            socket.leave(roomToLeave);
             socket.room = null;
+
+            sendUserList(roomToLeave); // 백업된 방 이름으로 유저 리스트 갱신
             sendRoomCounts();
         }
     });
 
-    socket.on('disconnect', () => { sendRoomCounts(); });
+    socket.on('disconnect', () => {
+        if (socket.room) {
+            const roomToLeave = socket.room;
+            io.to(roomToLeave).emit('chat message', {
+                name: '시스템', text: `${socket.userName}님이 접속을 종료했습니다.`, type: 'system', room: roomToLeave
+            });
+            sendUserList(roomToLeave);
+        }
+        sendRoomCounts();
+    });
 });
 
 server.listen(3000, () => { console.log('Server is running on port 3000'); });
