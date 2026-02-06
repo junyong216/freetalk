@@ -174,10 +174,12 @@
                 <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem;">⬅️</span>
                 <div id="room-title" style="font-weight:bold;"></div>
                 <span onclick="setNickname()"
-                    style="cursor:pointer; font-size:0.9rem; background:#eee; padding:2px 8px; border-radius:5px; margin-left:5px;">닉네임 변경</span>
+                    style="cursor:pointer; font-size:0.9rem; background:#eee; padding:2px 8px; border-radius:5px; margin-left:5px;">닉네임
+                    변경</span>
             </div>
             <button onclick="leaveChat()"
-                style="background:#ff4d4d; color:white; border:none; padding:7px 15px; border-radius:8px; font-weight:bold;">방 나가기</button>
+                style="background:#ff4d4d; color:white; border:none; padding:7px 15px; border-radius:8px; font-weight:bold;">방
+                나가기</button>
         </div>
         <ul id="messages"></ul>
         <form id="form">
@@ -234,7 +236,7 @@
             const list = document.getElementById('messages');
             const item = document.createElement('li');
 
-            // 1. 시스템 메시지 처리 (닉네임 없이 중앙 정렬)
+            // 1. 시스템 메시지 처리 (기존 유지)
             if (data.name === '시스템' || data.type === 'system') {
                 item.style.cssText = "align-self:center; background:rgba(0,0,0,0.08); color:#555; font-size:0.8rem; border-radius:20px; padding:5px 15px; margin:10px 0; text-align:center;";
                 item.textContent = data.text;
@@ -243,26 +245,26 @@
                 return;
             }
 
-            // 2. 일반 메시지 레이아웃 설정
             const isMy = (data.name === userName);
             item.className = isMy ? 'my-msg' : 'other-msg';
-            item.style.listStyle = "none"; // 불필요한 점 제거
 
-            // 3. 내용 결정 (이미지 vs 텍스트)
+            // 2. 이미지 크기 조절: 최대 높이를 설정하여 너무 크게 보이지 않게 함
             let content = "";
             if (data.type === 'image') {
-                content = `<img src="${data.text}" style="max-width:100%; border-radius:10px; display:block;" onclick="window.open(this.src)">`;
+                content = `<img src="${data.text}" style="max-width:200px; max-height:300px; border-radius:10px; display:block; object-fit:contain;" onclick="window.open(this.src)">`;
             } else {
                 content = `<span>${data.text || ""}</span>`;
             }
 
             const timeStr = data.time || "";
-            const readBadge = (data.read_count > 0) ? `<span style="color:#ffeb3b; font-size:0.7rem; font-weight:bold; margin-bottom:2px;">${data.read_count}</span>` : '';
 
-            // 4. 시간 및 읽음 숫자 (위치 고정)
+            // 3. 읽음 숫자 디자인 변경: 노란색 -> 네이비(#2c3e50), 0일 때는 숨김
+            // read_count가 0보다 클 때만 표시
+            const readBadge = (data.read_count > 0) ? `<span style="color:#2c3e50; font-size:0.75rem; font-weight:bold; margin-bottom:2px;">${data.read_count}</span>` : '';
+
             const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column; width:50px;">
-            ${readBadge}
-            <span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
+                ${readBadge}
+                <span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
         </div>`;
 
             item.innerHTML = isMy ? `${content}${info}` : `<small style="display:block; margin-bottom:4px; color:#777;">${data.name}</small>${content}${info}`;
