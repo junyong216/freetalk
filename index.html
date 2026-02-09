@@ -312,13 +312,18 @@
     </div>
 
     <div id="context-menu"
-        style="display:none; position:fixed; z-index:5000; background:white; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.2); width:120px; overflow:hidden;">
+        style="display:none; position:fixed; z-index:5000; background:white; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.2); width:130px; overflow:hidden;">
+        <div onclick="menuAction('notice')"
+            style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem; color:#faad14;">📌 공지등록
+        </div>
         <div onclick="menuAction('reply')"
             style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">↩️ 답장</div>
         <div onclick="menuAction('like')"
             style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">❤️ 공감</div>
+        <div onclick="menuAction('copy')"
+            style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📋 복사</div>
         <div onclick="menuAction('share')"
-            style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📤 복사</div>
+            style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📤 공유</div>
         <div id="menu-delete" onclick="menuAction('delete')"
             style="padding:10px; cursor:pointer; color:red; font-size:0.9rem;">🗑️ 삭제</div>
     </div>
@@ -590,27 +595,34 @@
             }
         }
 
-        // 우클릭 메뉴 처리
-        // [수정] 우클릭 메뉴 처리: '공유' 이름 변경 및 '삭제' 권한 개방
         function showContextMenu(x, y, data, isMy) {
             const menu = document.getElementById('context-menu');
             selectedMsgData = data;
 
-            // [변경] 삭제 버튼을 무조건 보이게 설정 (상대방 메시지도 삭제 가능)
-            document.getElementById('menu-delete').style.display = 'block';
-
-            // 메뉴 레이아웃 구성
+            // 공지등록을 최상단으로, 답장을 그 다음으로 배치했습니다.
             menu.innerHTML = `
+                <div onclick="menuAction('notice')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem; color:#faad14; font-weight:bold;">📌 공지등록</div>
                 <div onclick="menuAction('reply')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">↩️ 답장</div>
-                <div onclick="menuAction('notice')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem; color:#faad14;">📌 공지등록</div>
                 <div onclick="menuAction('like')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">❤️ 공감</div>
                 <div onclick="menuAction('copy')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📋 복사</div>
+                <div onclick="menuAction('share')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📤 공유하기</div>
                 <div onclick="menuAction('delete')" style="padding:10px; cursor:pointer; color:red; font-size:0.9rem;">🗑️ 삭제</div>
             `;
 
             menu.style.display = 'block';
-            menu.style.left = Math.min(x, window.innerWidth - 130) + 'px';
-            menu.style.top = Math.min(y, window.innerHeight - 200) + 'px'; // 메뉴가 길어져서 위치 조정
+
+            // 메뉴가 화면 밖으로 나가지 않게 위치 조정
+            const menuWidth = 130;
+            const menuHeight = 260; // 항목이 많아져서 높이값 상향
+
+            let posX = x;
+            let posY = y;
+
+            if (x + menuWidth > window.innerWidth) posX = window.innerWidth - menuWidth - 10;
+            if (y + menuHeight > window.innerHeight) posY = window.innerHeight - menuHeight - 10;
+
+            menu.style.left = posX + 'px';
+            menu.style.top = posY + 'px';
 
             setTimeout(() => {
                 document.onclick = () => {
@@ -628,32 +640,36 @@
             if (action === 'reply') {
                 input.value = `[${selectedMsgData.name}님에게 답장]: `;
                 input.focus();
-            } else if (action === 'like') {
+            }
+            else if (action === 'like') {
                 socket.emit('like message', selectedMsgData.id);
-            } else if (action === 'copy') {
+            }
+            else if (action === 'copy') {
+                // 클립보드 복사 기능
                 const textToCopy = selectedMsgData.type === 'image' ? '[이미지]' : selectedMsgData.text;
-                navigator.clipboard.writeText(textToCopy);
-                alert('클립보드에 복사되었습니다.');
-            } else if (action === 'share') {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    alert('클립보드에 복사되었습니다.');
+                });
+            }
+            else if (action === 'share') {
+                // 스마트폰 공유 기능 (Web Share API)
                 const shareData = {
-                    title: '프리톡 메시지 공유',
+                    title: '프리톡 메시지',
                     text: `${selectedMsgData.name}: ${selectedMsgData.text}`,
                     url: window.location.href
                 };
                 if (navigator.share) {
                     navigator.share(shareData).catch(() => { });
                 } else {
-                    alert('복사 기능을 이용해 주세요.');
+                    alert('이 브라우저에서는 공유 기능을 지원하지 않습니다. 복사를 이용해 주세요.');
                 }
-            } else if (action === 'delete') {
-                // [수정 핵심] 서버에 알리지 않고 '내 화면'에서만 지웁니다.
-                if (confirm("이 메시지를 내 화면에서만 삭제할까요? (상대방에겐 보입니다)")) {
+            }
+            else if (action === 'delete') {
+                if (confirm("이 메시지를 내 화면에서만 삭제할까요?")) {
                     const target = document.getElementById(`msg-${selectedMsgData.id}`);
                     if (target) {
-                        target.style.transition = "all 0.3s";
                         target.style.opacity = "0";
-                        target.style.transform = "translateX(20px)";
-                        setTimeout(() => target.remove(), 300); // 0.3초 뒤 요소 삭제
+                        setTimeout(() => target.remove(), 300);
                     }
                 }
             }
