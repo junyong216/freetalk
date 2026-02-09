@@ -13,6 +13,8 @@ app.use(express.static(__dirname));
 const db = new sqlite3.Database('./chat_v2.db');
 const allRooms = new Set(["자유 대화방", "정보 공유방", "비밀 대화방"]);
 
+const roomNotices = {};
+
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,6 +69,8 @@ io.on('connection', (socket) => {
 
         sendRoomCounts();
         sendUserList(data.room);
+
+        socket.emit('load notice', roomNotices[data.room]);
 
         // [최적화] 해당 방의 메시지 읽음 처리 (0보다 작아지지 않게)
         db.run("UPDATE messages SET read_count = MAX(0, read_count - 1) WHERE room = ? AND read_count > 0", [data.room], (err) => {
@@ -170,6 +174,11 @@ io.on('connection', (socket) => {
                 });
             }
         });
+    });
+
+    socket.on('set notice', (data) => {
+        roomNotices[data.room] = data.text; // 서버에 저장
+        io.to(data.room).emit('new notice', { text: data.text }); // 방 전체에 알림
     });
 
     socket.on('typing', (data) => {
