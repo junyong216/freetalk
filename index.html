@@ -200,6 +200,8 @@
             <div style="display:flex; align-items:center; gap:10px;">
                 <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem;">⬅️</span>
                 <div id="room-title" style="font-weight:bold;"></div>
+                <div id="typing-indicator" style="font-size: 0.7rem; color: #6e8efb; margin-left: 10px; height: 15px;">
+                </div>
                 <span onclick="toggleUserList()" style="cursor:pointer; font-size:0.9rem; margin-left:10px;">👤 <span
                         id="user-count-badge">0</span></span>
                 <span onclick="setNickname()"
@@ -465,6 +467,29 @@
             const target = document.getElementById(`msg-${id}`);
             if (target) {
                 target.remove();
+            }
+        });
+
+        let typingTimeout;
+
+        // 1. 입력 이벤트 감지
+        document.getElementById('input').addEventListener('input', () => {
+            if (currentRoom) {
+                socket.emit('typing', { room: currentRoom, name: userName });
+            }
+        });
+
+        // 2. 서버로부터 '누구 입력 중' 신호 수신
+        socket.on('display typing', (data) => {
+            const indicator = document.getElementById('typing-indicator');
+            if (data.name !== userName) { // 내가 치는 건 안 보여줌
+                indicator.textContent = `${data.name}님이 입력 중...`;
+
+                // 2초 동안 추가 입력 없으면 문구 삭제
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    indicator.textContent = '';
+                }, 2000);
             }
         });
 

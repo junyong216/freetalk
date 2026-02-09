@@ -171,6 +171,11 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('typing', (data) => {
+        // 본인을 제외한 방 안의 모든 사람에게 전송
+        socket.to(data.room).emit('display typing', { name: data.name });
+    });
+
     socket.on('update active room', (roomName) => {
         socket.nowRoom = roomName; // 소켓 객체에 현재 보고 있는 방 상태 저장
     });
