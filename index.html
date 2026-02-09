@@ -506,28 +506,30 @@
             } else if (action === 'like') {
                 socket.emit('like message', selectedMsgData.id);
             } else if (action === 'copy') {
-                // 단순 텍스트 복사
                 const textToCopy = selectedMsgData.type === 'image' ? '[이미지]' : selectedMsgData.text;
                 navigator.clipboard.writeText(textToCopy);
                 alert('클립보드에 복사되었습니다.');
             } else if (action === 'share') {
-                // [추가] 실제 기기의 공유 기능 호출 (모바일 환경에서 유용)
                 const shareData = {
                     title: '프리톡 메시지 공유',
                     text: `${selectedMsgData.name}: ${selectedMsgData.text}`,
                     url: window.location.href
                 };
                 if (navigator.share) {
-                    navigator.share(shareData).catch(() => {
-                        alert('공유에 실패했습니다.');
-                    });
+                    navigator.share(shareData).catch(() => { });
                 } else {
-                    alert('이 브라우저에서는 공유 기능을 지원하지 않습니다. 대신 복사 기능을 이용해 주세요.');
+                    alert('복사 기능을 이용해 주세요.');
                 }
             } else if (action === 'delete') {
-                // [권한 완전 개방] 이제 누구나 삭제 가능
-                if (confirm("정말로 이 메시지를 모든 대화방에서 삭제할까요?")) {
-                    socket.emit('delete message', selectedMsgData.id);
+                // [수정 핵심] 서버에 알리지 않고 '내 화면'에서만 지웁니다.
+                if (confirm("이 메시지를 내 화면에서만 삭제할까요? (상대방에겐 보입니다)")) {
+                    const target = document.getElementById(`msg-${selectedMsgData.id}`);
+                    if (target) {
+                        target.style.transition = "all 0.3s";
+                        target.style.opacity = "0";
+                        target.style.transform = "translateX(20px)";
+                        setTimeout(() => target.remove(), 300); // 0.3초 뒤 요소 삭제
+                    }
                 }
             }
             document.getElementById('context-menu').style.display = 'none';
