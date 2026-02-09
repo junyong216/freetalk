@@ -56,32 +56,35 @@ function sendUserList(room) {
 io.on('connection', (socket) => {
     sendRoomCounts();
 
-    // 1. 방 입장 처리 (수정된 버전)
     socket.on('join room', (data) => {
+        // 이미 참여중인지 확인 (중복 입장 방지)
         const isAlreadyIn = socket.rooms.has(data.room);
+
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
+        socket.nowRoom = data.room; // 입장하자마자 보고 있는 방 설정
 
         sendRoomCounts();
         sendUserList(data.room);
 
-        // 안 읽은 수 업데이트
-        db.run("UPDATE messages SET read_count = MAX(0, read_count - 1) WHERE room = ?", [data.room], (err) => {
+        // [최적화] 해당 방의 메시지 읽음 처리 (0보다 작아지지 않게)
+        db.run("UPDATE messages SET read_count = MAX(0, read_count - 1) WHERE room = ? AND read_count > 0", [data.room], (err) => {
             if (!err) {
+                // 시간 보정 포함 쿼리
                 const loadQuery = `
                     SELECT id, name, text, type, room, likes, read_count, 
                     strftime('%H:%M', created_at, 'localtime') as time 
                     FROM messages WHERE room = ? 
-                    ORDER BY created_at DESC LIMIT 30
+                    ORDER BY created_at DESC LIMIT 50
                 `;
 
                 db.all(loadQuery, [data.room], (err, rows) => {
                     if (!err) {
-                        // [중요] 1. 과거 메시지를 먼저 보낸다
+                        // 1. 과거 메시지 먼저 전송
                         socket.emit('load messages', rows.reverse());
 
-                        // [중요] 2. 그 다음 "입장했습니다" 시스템 메시지를 보낸다
+                        // 2. 신규 입장인 경우에만 시스템 메시지 전송
                         if (!isAlreadyIn) {
                             io.to(data.room).emit('chat message', {
                                 name: '시스템',
@@ -96,23 +99,8 @@ io.on('connection', (socket) => {
         });
     });
 
-    // 2. 공감 기능 (join room 밖으로 뺐습니다)
-    socket.on('like message', (id) => {
-        db.run("UPDATE messages SET likes = likes + 1 WHERE id = ?", [id], (err) => {
-            if (!err) {
-                db.get("SELECT id, likes, room FROM messages WHERE id = ?", [id], (err, row) => {
-                    if (!err && row) {
-                        io.to(row.room).emit('update likes', { id: row.id, likes: row.likes });
-                    }
-                });
-            }
-        });
-    });
-
     socket.on('chat message', (data) => {
         const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-
-        // 해당 방에 소켓 연결은 되어있지만, '보고 있는 화면(nowRoom)'이 다른 사람 수 계산
         const roomName = data.room;
         const allSocketsInRoom = io.sockets.adapter.rooms.get(roomName);
 
@@ -120,16 +108,15 @@ io.on('connection', (socket) => {
         if (allSocketsInRoom) {
             allSocketsInRoom.forEach(socketId => {
                 const s = io.sockets.sockets.get(socketId);
-                // 핵심: 소켓이 연결된 방(room)과 현재 보고 있는 방(nowRoom)이 일치해야 '읽음'
-                if (s.nowRoom === roomName) {
+                // 현재 해당 방을 보고 있는 유저 수 계산
+                if (s && s.nowRoom === roomName) {
                     activeUsers++;
                 }
             });
         }
 
-        // 안 읽은 사람 수 = (방에 있는 전체 소켓 수 - 현재 활성화된 유저 수)
-        // 혹은 더 직관적으로: "지금 안 보고 있는 사람이 있으면 1" (1:1 채팅 기준)
         const totalInRoom = allSocketsInRoom ? allSocketsInRoom.size : 1;
+        // 안 읽은 사람 수 = 방 접속자 수 - 현재 화면을 보고 있는 사람 수
         const initialReadCount = Math.max(0, totalInRoom - activeUsers);
 
         db.run("INSERT INTO messages (room, name, text, type, read_count, likes) VALUES (?, ?, ?, ?, ?, 0)",
