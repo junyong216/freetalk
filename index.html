@@ -450,6 +450,16 @@
 
         socket.on('chat message', (data) => addMessage(data));
 
+        socket.on('update read status', (data) => {
+            if (currentRoom === data.room) {
+                // 메시지 옆의 파란색 숫자(1)를 모두 찾아서 제거
+                const badges = document.querySelectorAll('.my-msg span[style*="color: rgb(110, 142, 251)"], .my-msg span[style*="color:#6e8efb"]');
+                badges.forEach(badge => {
+                    badge.style.display = 'none'; // 또는 badge.remove();
+                });
+            }
+        });
+
         socket.on('room counts', (data) => {
             const list = document.getElementById('room-list');
             list.innerHTML = '';

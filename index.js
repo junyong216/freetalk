@@ -59,36 +59,35 @@ io.on('connection', (socket) => {
     sendRoomCounts();
 
     socket.on('join room', (data) => {
-        // 이미 참여중인지 확인 (중복 입장 방지)
         const isAlreadyIn = socket.rooms.has(data.room);
 
         socket.join(data.room);
         socket.userName = data.name;
         socket.room = data.room;
-        socket.nowRoom = data.room; // 입장하자마자 보고 있는 방 설정
+        socket.nowRoom = data.room;
 
         sendRoomCounts();
         sendUserList(data.room);
 
         socket.emit('load notice', roomNotices[data.room]);
 
-        // [최적화] 해당 방의 메시지 읽음 처리 (0보다 작아지지 않게)
-        db.run("UPDATE messages SET read_count = MAX(0, read_count - 1) WHERE room = ? AND read_count > 0", [data.room], (err) => {
+        // [수정] 내가 아닌 다른 사람이 보낸 메시지의 read_count만 줄여야 함
+        // (보통 1:1 대화라면 상대방이 들어왔을 때 내 메시지의 1이 사라지는 원리)
+        db.run("UPDATE messages SET read_count = 0 WHERE room = ? AND name != ?", [data.room, data.name], (err) => {
             if (!err) {
-                // 시간 보정 포함 쿼리
+                // ★ 중요: DB 업데이트 성공 후, 방에 있는 "모든 사용자"에게 읽음 처리 신호를 보냄
+                io.to(data.room).emit('update read status', { room: data.room });
+
                 const loadQuery = `
-                    SELECT id, name, text, type, room, likes, read_count, 
-                    strftime('%H:%M', created_at, 'localtime') as time 
-                    FROM messages WHERE room = ? 
-                    ORDER BY created_at DESC LIMIT 50
-                `;
+                SELECT id, name, text, type, room, likes, read_count, 
+                strftime('%H:%M', created_at, 'localtime') as time 
+                FROM messages WHERE room = ? 
+                ORDER BY created_at DESC LIMIT 50
+            `;
 
                 db.all(loadQuery, [data.room], (err, rows) => {
                     if (!err) {
-                        // 1. 과거 메시지 먼저 전송
                         socket.emit('load messages', rows.reverse());
-
-                        // 2. 신규 입장인 경우에만 시스템 메시지 전송
                         if (!isAlreadyIn) {
                             io.to(data.room).emit('chat message', {
                                 name: '시스템',
