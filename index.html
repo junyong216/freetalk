@@ -63,16 +63,23 @@
             background: #f0f2f5;
         }
 
-        /* 상단바: 모바일 최적화 */
+        /* 상단바: 2단 구조로 변경하여 겹침 완벽 방지 */
         .chat-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: white;
+            padding: 12px 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: white;
-            padding: 10px 15px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-            min-height: 60px;
-            flex-shrink: 0;
+            width: 100%;
         }
 
         .header-left {
@@ -88,8 +95,14 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 130px;
-            /* 제목 길면 생략 */
+            max-width: 160px;
+            font-size: 1.1rem;
+        }
+
+        .header-bottom {
+            display: flex;
+            justify-content: flex-end;
+            width: 100%;
         }
 
         /* 메시지 리스트 */
@@ -128,7 +141,6 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
 
-        /* 입력창 */
         #form {
             background: white;
             padding: 10px 15px;
@@ -146,7 +158,6 @@
             outline: none;
         }
 
-        /* 입력 중 표시 (채팅창 내부) */
         #typing-indicator {
             height: 25px;
             padding: 0 20px;
@@ -218,11 +229,13 @@
 </head>
 
 <body>
-    <div id="main-settings-btn" onclick="alert('설정 메뉴 준비 중')"
-        style="position:fixed; top:15px; right:15px; z-index:2000; cursor:pointer; background:white; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
-        ⚙️</div>
-
     <div id="list-area">
+        <div style="width: 100%; display: flex; justify-content: flex-end; padding: 15px;">
+            <div id="main-settings-btn" onclick="alert('설정 메뉴 준비 중')"
+                style="cursor:pointer; background:white; width:35px; height:35px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                ⚙️</div>
+        </div>
+
         <div class="room-container">
             <h2 style="color: #6e8efb;">💬 프리톡</h2>
             <div id="room-list"></div>
@@ -241,22 +254,25 @@
 
     <div id="chat-area">
         <div class="chat-header">
-            <div class="header-left">
-                <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem; flex-shrink:0;">⬅️</span>
-                <div id="room-title"></div>
-                <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
-                    <span onclick="toggleUserList()" style="cursor:pointer; font-size:0.9rem;">👤 <span
+            <div class="header-top">
+                <div class="header-left">
+                    <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem; flex-shrink:0;">⬅️</span>
+                    <div id="room-title"></div>
+                    <span onclick="toggleUserList()" style="cursor:pointer; font-size:0.9rem; flex-shrink:0;">👤 <span
                             id="user-count-badge">0</span></span>
-                    <span onclick="setNickname()"
-                        style="cursor:pointer; font-size:0.8rem; background:#eee; padding:4px 8px; border-radius:5px; white-space:nowrap;">닉네임</span>
                 </div>
+                <button onclick="leaveChat()"
+                    style="background:#ff4d4d; color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; font-size:0.85rem; flex-shrink:0; cursor:pointer;">나가기</button>
             </div>
-            <button onclick="leaveChat()"
-                style="background:#ff4d4d; color:white; border:none; padding:7px 12px; border-radius:8px; font-weight:bold; font-size:0.85rem; flex-shrink:0; margin-left:5px;">나가기</button>
+
+            <div class="header-bottom">
+                <span onclick="setNickname()"
+                    style="cursor:pointer; font-size:0.75rem; background:#f0f0f0; color:#666; padding:3px 10px; border-radius:15px; border: 1px solid #ddd;">닉네임
+                    변경</span>
+            </div>
         </div>
 
         <ul id="messages"></ul>
-
         <div id="typing-indicator"></div>
 
         <form id="form">
@@ -270,7 +286,7 @@
     </div>
 
     <div id="user-list-modal"
-        style="display:none; position:absolute; top:65px; right:10px; background:white; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:150px; z-index:100; padding:10px;">
+        style="display:none; position:absolute; top:85px; right:10px; background:white; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.1); width:150px; z-index:100; padding:10px;">
         <div
             style="font-weight:bold; font-size:0.8rem; border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:5px;">
             접속자 명단</div>
@@ -295,8 +311,8 @@
     <script>
         const socket = io();
         let userName = '', currentRoom = '', typingTimeout;
+        let selectedMsgData = null;
 
-        // 메시지 추가 함수
         function addMessage(data) {
             if (!data || (data.room && data.room !== currentRoom)) return;
             const list = document.getElementById('messages');
@@ -313,11 +329,7 @@
             const isMy = (data.name === userName);
             item.className = isMy ? 'my-msg' : 'other-msg';
             item.id = `msg-${data.id}`;
-
-            item.oncontextmenu = (e) => {
-                e.preventDefault();
-                showContextMenu(e.clientX, e.clientY, data, isMy);
-            };
+            item.oncontextmenu = (e) => { e.preventDefault(); showContextMenu(e.clientX, e.clientY, data, isMy); };
 
             let content = data.type === 'image'
                 ? `<img src="${data.text}" style="max-width:200px; max-height:300px; border-radius:10px; display:block; object-fit:contain; cursor:pointer;" onclick="openImageInNewTab('${data.text}')">`
@@ -325,50 +337,27 @@
 
             const timeStr = data.time || "";
             const readBadge = (data.read_count > 0) ? `<span style="color:#2c3e50; font-size:0.75rem; font-weight:bold; margin-bottom:2px;">${data.read_count}</span>` : '';
-
-            const info = `<div id="info-${data.id}" style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column; width:50px;">
-                ${readBadge}<span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
-            </div>`;
-
+            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column; width:50px;">${readBadge}<span style="color:#aaa; font-size:0.6rem;">${timeStr}</span></div>`;
             const likeHtml = `<div id="like-${data.id}" class="like-badge" style="display: ${data.likes > 0 ? 'flex' : 'none'};" onclick="socket.emit('like message', ${data.id})">❤️ <span>${data.likes || 0}</span></div>`;
 
             item.innerHTML = isMy ? `${content}${info}${likeHtml}` : `<small style="display:block; margin-bottom:4px; color:#777;">${data.name}</small>${content}${info}${likeHtml}`;
-
             list.appendChild(item);
             list.scrollTop = list.scrollHeight;
         }
 
-        // 입력 중 알림 수신
         socket.on('display typing', (data) => {
             const indicator = document.getElementById('typing-indicator');
             if (data.name !== userName && currentRoom) {
-                indicator.innerHTML = `
-                    <div style="background: rgba(255,255,255,0.8); padding: 2px 10px; border-radius: 10px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                        ${data.name}님이 입력 중 <div class="typing-dots"><span></span><span></span><span></span></div>
-                    </div>
-                `;
-                const list = document.getElementById('messages');
-                list.scrollTop = list.scrollHeight;
-
+                indicator.innerHTML = `<div style="background: rgba(255,255,255,0.8); padding: 2px 10px; border-radius: 10px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">${data.name}님이 입력 중 <div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
                 clearTimeout(typingTimeout);
                 typingTimeout = setTimeout(() => { indicator.innerHTML = ''; }, 2000);
             }
         });
 
-        // 입력 이벤트 감지
-        document.getElementById('input').addEventListener('input', () => {
-            if (currentRoom) socket.emit('typing', { room: currentRoom, name: userName });
-        });
-
-        // 나머지 소켓 및 버튼 함수들
-        socket.on('load messages', (messages) => {
-            const list = document.getElementById('messages');
-            list.innerHTML = '';
-            if (messages) messages.forEach(msg => addMessage({ ...msg, room: currentRoom }));
-        });
-
+        document.getElementById('input').addEventListener('input', () => { if (currentRoom) socket.emit('typing', { room: currentRoom, name: userName }); });
+        socket.on('load messages', (messages) => { const list = document.getElementById('messages'); list.innerHTML = ''; if (messages) messages.forEach(msg => addMessage({ ...msg, room: currentRoom })); });
         socket.on('chat message', (data) => addMessage(data));
-
         socket.on('room counts', (data) => {
             const list = document.getElementById('room-list');
             list.innerHTML = '';
@@ -425,11 +414,7 @@
             }
         }
 
-        function toggleUserList() {
-            const modal = document.getElementById('user-list-modal');
-            modal.style.display = modal.style.display === 'none' ? 'block' : 'none';
-        }
-
+        function toggleUserList() { const modal = document.getElementById('user-list-modal'); modal.style.display = modal.style.display === 'none' ? 'block' : 'none'; }
         socket.on('user list', (users) => {
             document.getElementById('user-count-badge').textContent = users.length;
             const list = document.getElementById('user-names');
@@ -444,16 +429,10 @@
 
         socket.on('update likes', (data) => {
             const likeBox = document.querySelector(`#like-${data.id}`);
-            if (likeBox) {
-                likeBox.style.display = 'flex';
-                likeBox.querySelector('span').textContent = data.likes;
-            }
+            if (likeBox) { likeBox.style.display = 'flex'; likeBox.querySelector('span').textContent = data.likes; }
         });
 
-        socket.on('message deleted', (id) => {
-            const target = document.getElementById(`msg-${id}`);
-            if (target) target.remove();
-        });
+        socket.on('message deleted', (id) => { const target = document.getElementById(`msg-${id}`); if (target) target.remove(); });
 
         function showContextMenu(x, y, data, isMy) {
             const menu = document.getElementById('context-menu');
@@ -485,10 +464,7 @@
             w.document.write(`<body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;"><img src="${data}" style="max-width:100%;max-height:100%;"></body>`);
         }
 
-        function createNewRoom() {
-            const val = document.getElementById('new-room-input').value;
-            if (val) enterRoom(val);
-        }
+        function createNewRoom() { const val = document.getElementById('new-room-input').value; if (val) enterRoom(val); }
 
         function uploadFile(target) {
             const file = target.files[0];
