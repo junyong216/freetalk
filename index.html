@@ -224,6 +224,29 @@
         #context-menu div:hover {
             background-color: #f5f5f5;
         }
+
+        @keyframes highlight-glow {
+            0% {
+                background-color: #fffbe6;
+                transform: scale(1);
+            }
+
+            50% {
+                background-color: #ffd666;
+                transform: scale(1.02);
+            }
+
+            100% {
+                background-color: #fffbe6;
+                transform: scale(1);
+            }
+        }
+
+        .search-highlight {
+            animation: highlight-glow 1s ease-in-out 2;
+            /* 2번 반짝임 */
+            border: 2px solid #faad14 !important;
+        }
     </style>
 </head>
 
@@ -249,24 +272,30 @@
 
     <div id="chat-area">
         <div
-            style="display:flex; justify-content:space-between; align-items:center; background:white; padding:10px 15px; border-bottom:1px solid #eee; z-index:2000; position: relative;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem;">⬅️</span>
-                <div id="room-title"
-                    style="font-weight:bold; font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px;">
-                </div>
-                <span onclick="toggleUserList()"
-                    style="cursor:pointer; font-size:0.85rem; background:#f0f2f5; padding:2px 8px; border-radius:12px;">
-                    👤 <span id="user-count-badge">0</span>
-                </span>
+            style="display:flex; align-items:center; background:white; padding:10px 15px; border-bottom:1px solid #eee; z-index:2000; gap:10px;">
+            <span onclick="goBack()" style="cursor:pointer; font-size:1.2rem;">⬅️</span>
+
+            <div id="room-title"
+                style="font-weight:bold; font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px;">
             </div>
 
-            <div style="display:flex; align-items:center; gap:6px;">
+            <div id="search-container"
+                style="display:flex; align-items:center; background:#f0f2f5; border-radius:15px; padding:2px 10px; flex:1;">
+                <span style="font-size:0.8rem;">🔍</span>
+                <input id="search-input" oninput="searchMessages()" placeholder="검색..."
+                    style="border:none; background:transparent; width:100%; font-size:0.8rem; outline:none; padding-left:5px;">
+            </div>
+
+            <span onclick="toggleUserList()"
+                style="cursor:pointer; font-size:0.85rem; background:#f0f2f5; padding:2px 8px; border-radius:12px; white-space:nowrap;">
+                👤 <span id="user-count-badge">0</span>
+            </span>
+
+            <div style="display:flex; gap:5px;">
                 <button onclick="setNickname()"
-                    style="background:#eee; border:none; padding:6px 10px; border-radius:8px; font-size:0.75rem;">닉네임
-                    변경</button>
+                    style="background:#eee; border:none; padding:6px 8px; border-radius:8px; font-size:0.7rem; white-space:nowrap;">닉네임</button>
                 <button onclick="leaveChat()"
-                    style="background:#ff4d4d; color:white; border:none; padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:bold;">나가기</button>
+                    style="background:#ff4d4d; color:white; border:none; padding:6px 8px; border-radius:8px; font-size:0.7rem; font-weight:bold; white-space:nowrap;">나가기</button>
             </div>
         </div>
 
@@ -481,6 +510,44 @@
             else displayNotice(null);
         });
 
+        let searchIndex = -1;
+        let searchResults = [];
+
+        function searchMessages() {
+            const keyword = document.getElementById('search-input').value.trim();
+            const allMessages = document.querySelectorAll('#messages li span'); // 텍스트가 담긴 span만 탐색
+
+            // 기존 하이라이트 제거
+            document.querySelectorAll('.search-highlight').forEach(el => el.classList.remove('search-highlight'));
+
+            if (!keyword) return;
+
+            // 키워드가 포함된 메시지 필터링
+            searchResults = Array.from(allMessages).filter(msg =>
+                msg.textContent.includes(keyword)
+            ).map(msg => msg.parentElement); // li 태그 추출
+
+            if (searchResults.length > 0) {
+                // 가장 최근 메시지(마지막 결과)부터 보여줌
+                const target = searchResults[searchResults.length - 1];
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.classList.add('search-highlight');
+            }
+        }
+
+        // 엔터 키를 누를 때마다 이전 결과로 계속 이동하고 싶다면?
+        document.getElementById('search-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && searchResults.length > 0) {
+                e.preventDefault();
+                searchIndex = (searchIndex + 1) % searchResults.length;
+                const target = searchResults[searchResults.length - 1 - searchIndex];
+
+                document.querySelectorAll('.search-highlight').forEach(el => el.classList.remove('search-highlight'));
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                target.classList.add('search-highlight');
+            }
+        });
+
         // --- 기능 함수들 ---
         function enterRoom(roomName) {
             if (!userName) { setNickname(); if (!userName) return; }
@@ -691,10 +758,16 @@
             if (text) {
                 bar.style.display = 'flex';
                 txt.textContent = text;
-                // 클릭하면 해당 메시지로 스크롤 이동
+                // 클릭 시 해당 메시지로 이동하는 로직 보강
                 bar.onclick = () => {
-                    const targetMsg = document.getElementById(`msg-${targetId}`);
-                    if (targetMsg) targetMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (targetId) {
+                        const targetMsg = document.getElementById(`msg-${targetId}`);
+                        if (targetMsg) {
+                            targetMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            targetMsg.classList.add('search-highlight'); // 반짝이는 효과 추가
+                            setTimeout(() => targetMsg.classList.remove('search-highlight'), 2000);
+                        }
+                    }
                 };
             } else {
                 bar.style.display = 'none';
