@@ -234,7 +234,8 @@
 
             <div style="display:flex; align-items:center; gap:6px;">
                 <button onclick="setNickname()"
-                    style="background:#eee; border:none; padding:6px 10px; border-radius:8px; font-size:0.75rem;">닉네임 변경</button>
+                    style="background:#eee; border:none; padding:6px 10px; border-radius:8px; font-size:0.75rem;">닉네임
+                    변경</button>
                 <button onclick="leaveChat()"
                     style="background:#ff4d4d; color:white; border:none; padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:bold;">나가기</button>
                 <div onclick="alert('설정 메뉴 준비 중')" style="cursor:pointer; font-size:1.2rem; padding-left:5px;">⚙️</div>
@@ -465,29 +466,69 @@
         }
 
         // 우클릭 메뉴 처리
+        // [수정] 우클릭 메뉴 처리: '공유' 이름 변경 및 '삭제' 권한 개방
         function showContextMenu(x, y, data, isMy) {
             const menu = document.getElementById('context-menu');
             selectedMsgData = data;
-            document.getElementById('menu-delete').style.display = isMy ? 'block' : 'none';
+
+            // [변경] 삭제 버튼을 무조건 보이게 설정 (상대방 메시지도 삭제 가능)
+            document.getElementById('menu-delete').style.display = 'block';
+
+            // 메뉴 레이아웃 구성
+            menu.innerHTML = `
+            <div onclick="menuAction('reply')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">↩️ 답장</div>
+            <div onclick="menuAction('like')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">❤️ 공감</div>
+            <div onclick="menuAction('copy')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📋 복사</div>
+            <div onclick="menuAction('share')" style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📤 공유하기</div>
+            <div id="menu-delete" onclick="menuAction('delete')" style="padding:10px; cursor:pointer; color:red; font-size:0.9rem;">🗑️ 삭제</div>
+        `;
+
             menu.style.display = 'block';
             menu.style.left = Math.min(x, window.innerWidth - 130) + 'px';
-            menu.style.top = Math.min(y, window.innerHeight - 150) + 'px';
-            setTimeout(() => { document.onclick = () => { menu.style.display = 'none'; document.onclick = null; }; }, 100);
+            menu.style.top = Math.min(y, window.innerHeight - 200) + 'px'; // 메뉴가 길어져서 위치 조정
+
+            setTimeout(() => {
+                document.onclick = () => {
+                    menu.style.display = 'none';
+                    document.onclick = null;
+                };
+            }, 100);
         }
 
+        // [수정] 메뉴 액션 함수
         function menuAction(action) {
             if (!selectedMsgData) return;
             const input = document.getElementById('input');
+
             if (action === 'reply') {
                 input.value = `[${selectedMsgData.name}님에게 답장]: `;
                 input.focus();
             } else if (action === 'like') {
                 socket.emit('like message', selectedMsgData.id);
+            } else if (action === 'copy') {
+                // 단순 텍스트 복사
+                const textToCopy = selectedMsgData.type === 'image' ? '[이미지]' : selectedMsgData.text;
+                navigator.clipboard.writeText(textToCopy);
+                alert('클립보드에 복사되었습니다.');
             } else if (action === 'share') {
-                navigator.clipboard.writeText(selectedMsgData.type === 'image' ? '[이미지]' : selectedMsgData.text);
-                alert('복사되었습니다.');
+                // [추가] 실제 기기의 공유 기능 호출 (모바일 환경에서 유용)
+                const shareData = {
+                    title: '프리톡 메시지 공유',
+                    text: `${selectedMsgData.name}: ${selectedMsgData.text}`,
+                    url: window.location.href
+                };
+                if (navigator.share) {
+                    navigator.share(shareData).catch(() => {
+                        alert('공유에 실패했습니다.');
+                    });
+                } else {
+                    alert('이 브라우저에서는 공유 기능을 지원하지 않습니다. 대신 복사 기능을 이용해 주세요.');
+                }
             } else if (action === 'delete') {
-                if (confirm("삭제하시겠습니까?")) socket.emit('delete message', selectedMsgData.id);
+                // [권한 완전 개방] 이제 누구나 삭제 가능
+                if (confirm("정말로 이 메시지를 모든 대화방에서 삭제할까요?")) {
+                    socket.emit('delete message', selectedMsgData.id);
+                }
             }
             document.getElementById('context-menu').style.display = 'none';
         }
