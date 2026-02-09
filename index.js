@@ -158,6 +158,20 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 6. 공감(하트) 기능 추가 (이 부분이 빠져있었습니다!)
+    socket.on('like message', (id) => {
+        db.run("UPDATE messages SET likes = likes + 1 WHERE id = ?", [id], function (err) {
+            if (!err) {
+                // DB 업데이트 성공 후, 해당 메시지의 최신 likes 수를 가져와서 전체에 알림
+                db.get("SELECT id, likes FROM messages WHERE id = ?", [id], (err, row) => {
+                    if (!err && row) {
+                        io.emit('update likes', { id: row.id, likes: row.likes });
+                    }
+                });
+            }
+        });
+    });
+
     socket.on('typing', (data) => {
         // 본인을 제외한 방 안의 모든 사람에게 전송
         socket.to(data.room).emit('display typing', { name: data.name });

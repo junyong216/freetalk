@@ -234,7 +234,7 @@
 
             <div style="display:flex; align-items:center; gap:6px;">
                 <button onclick="setNickname()"
-                    style="background:#eee; border:none; padding:6px 10px; border-radius:8px; font-size:0.75rem;">닉네임</button>
+                    style="background:#eee; border:none; padding:6px 10px; border-radius:8px; font-size:0.75rem;">닉네임 변경</button>
                 <button onclick="leaveChat()"
                     style="background:#ff4d4d; color:white; border:none; padding:6px 10px; border-radius:8px; font-size:0.75rem; font-weight:bold;">나가기</button>
                 <div onclick="alert('설정 메뉴 준비 중')" style="cursor:pointer; font-size:1.2rem; padding-left:5px;">⚙️</div>
@@ -314,18 +314,24 @@
                 ? `<img src="${data.text}" style="max-width:200px; max-height:300px; border-radius:10px; display:block; cursor:pointer;" onclick="openImageInNewTab('${data.text}')">`
                 : `<span>${data.text || ""}</span>`;
 
-            // 정보(시간, 읽음 숫자) 및 좋아요
+            // 정보(시간, 읽음 숫자)
             const timeStr = data.time || "";
             const readBadge = (data.read_count > 0) ? `<span style="color:#6e8efb; font-size:0.7rem; font-weight:bold;">${data.read_count}</span>` : '';
-            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column; width:50px;">
+
+            // info 박스의 z-index를 조정하고 위치를 살짝 보정합니다.
+            const info = `<div style="position:absolute; bottom:0; ${isMy ? 'left:-55px; align-items:flex-end;' : 'right:-55px; align-items:flex-start;'} display:flex; flex-direction:column; width:50px; pointer-events:none;">
                 ${readBadge}<span style="color:#aaa; font-size:0.6rem;">${timeStr}</span>
             </div>`;
 
-            const likeHtml = `<div id="like-${data.id}" class="like-badge" style="display: ${data.likes > 0 ? 'flex' : 'none'};" onclick="socket.emit('like message', ${data.id})">
+            // 하트 배지: z-index를 추가하여 위로 올립니다.
+            const likeHtml = `<div id="like-${data.id}" class="like-badge" style="display: ${data.likes > 0 ? 'flex' : 'none'}; z-index: 100;" onclick="socket.emit('like message', ${data.id})">
                 ❤️ <span>${data.likes || 0}</span>
             </div>`;
 
-            item.innerHTML = isMy ? `${content}${info}${likeHtml}` : `<small style="display:block; margin-bottom:4px; color:#777; font-size:0.75rem;">${data.name}</small>${content}${info}${likeHtml}`;
+            // 구조 결합 (하트 배지가 레이어 최상단에 오도록 마지막에 배치)
+            item.innerHTML = isMy
+                ? `${content}${info}${likeHtml}`
+                : `<small style="display:block; margin-bottom:4px; color:#777; font-size:0.75rem;">${data.name}</small>${content}${info}${likeHtml}`;
 
             list.appendChild(item);
             list.scrollTop = list.scrollHeight;
