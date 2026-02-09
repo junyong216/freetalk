@@ -175,6 +175,45 @@
             right: auto;
             left: 5px;
         }
+
+        /* 점 3개가 통통 튀는 애니메이션 */
+        .typing-dots {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            margin-left: 4px;
+        }
+
+        .typing-dots span {
+            width: 3px;
+            height: 3px;
+            background-color: #6e8efb;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        /* 각 점마다 딜레이를 주어 순차적으로 움직이게 함 */
+        .typing-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1.0);
+            }
+        }
     </style>
 </head>
 
@@ -248,6 +287,16 @@
             style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📤 공유</div>
         <div id="menu-delete" onclick="menuAction('delete')"
             style="padding:10px; cursor:pointer; color:red; font-size:0.9rem;">🗑️ 삭제</div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; background:white; padding:15px; border-bottom:1px solid #eee;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <span onclick="goBack()" style="cursor:pointer;">⬅️</span>
+            <div id="room-title" style="font-weight:bold; font-size:1.1rem;"></div>
+        </div>
+        <div id="typing-indicator"
+            style="height:15px; font-size:0.75rem; color:#6e8efb; margin-top:5px; display:flex; align-items:center;">
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -482,13 +531,18 @@
         // 2. 서버로부터 '누구 입력 중' 신호 수신
         socket.on('display typing', (data) => {
             const indicator = document.getElementById('typing-indicator');
-            if (data.name !== userName) { // 내가 치는 건 안 보여줌
-                indicator.textContent = `${data.name}님이 입력 중...`;
+            if (data.name !== userName) {
+                // 이름 뒤에 움직이는 점 3개 구조 삽입
+                indicator.innerHTML = `
+                ${data.name}님이 입력 중
+                <div class="typing-dots">
+                    <span></span><span></span><span></span>
+                </div>
+            `;
 
-                // 2초 동안 추가 입력 없으면 문구 삭제
                 clearTimeout(typingTimeout);
                 typingTimeout = setTimeout(() => {
-                    indicator.textContent = '';
+                    indicator.innerHTML = '';
                 }, 2000);
             }
         });
