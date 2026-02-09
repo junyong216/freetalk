@@ -193,6 +193,34 @@
             }
         }
 
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        /* 다크모드용 클래스 */
+        body.theme-dark {
+            background-color: #1a1a1a !important;
+            color: #eee;
+        }
+
+        body.theme-dark #list-area .room-container,
+        body.theme-dark #chat-area,
+        body.theme-dark #settings-modal div {
+            background-color: #2d3436 !important;
+            color: white;
+        }
+
+        body.theme-dark .other-msg {
+            background-color: #3d4446 !important;
+            color: white;
+        }
+
         #context-menu div:hover {
             background-color: #f5f5f5;
         }
@@ -278,6 +306,32 @@
             style="padding:10px; cursor:pointer; border-bottom:1px solid #eee; font-size:0.9rem;">📤 복사</div>
         <div id="menu-delete" onclick="menuAction('delete')"
             style="padding:10px; cursor:pointer; color:red; font-size:0.9rem;">🗑️ 삭제</div>
+    </div>
+
+    <div id="settings-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9000; align-items:flex-end;">
+        <div
+            style="background:white; width:100%; border-radius:20px 20px 0 0; padding:25px; box-sizing:border-box; animation: slideUp 0.3s ease-out;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                <span style="font-weight:bold; font-size:1.1rem;">설정</span>
+                <span onclick="toggleSettings()" style="cursor:pointer; font-size:1.2rem;">✕</span>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <p style="font-size:0.9rem; color:#666; margin-bottom:10px;">테마 선택</p>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="changeTheme('default')"
+                        style="flex:1; padding:12px; border-radius:10px; border:none; background:#6e8efb; color:white; cursor:pointer;">블루
+                        (기본)</button>
+                    <button onclick="changeTheme('purple')"
+                        style="flex:1; padding:12px; border-radius:10px; border:none; background:#a29bfe; color:white; cursor:pointer;">보라</button>
+                    <button onclick="changeTheme('dark')"
+                        style="flex:1; padding:12px; border-radius:10px; border:none; background:#2d3436; color:white; cursor:pointer;">다크</button>
+                </div>
+            </div>
+            <button onclick="toggleSettings()"
+                style="width:100%; padding:15px; border-radius:10px; border:none; background:#eee; font-weight:bold;">닫기</button>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -436,6 +490,51 @@
             const val = document.getElementById('new-room-input').value;
             if (val) { enterRoom(val); document.getElementById('new-room-input').value = ''; }
         }
+
+        // 설정창 열기/닫기
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'flex' : 'none';
+        }
+
+        // 메인 설정 버튼 클릭 시 호출
+        document.getElementById('main-settings-btn').onclick = toggleSettings;
+
+        // 테마 변경 함수
+        function changeTheme(theme) {
+            // 기존 테마 클래스 제거
+            document.body.classList.remove('theme-purple', 'theme-dark');
+
+            // 버튼 색상 등 주요 포인트 컬러 변경을 위한 CSS 변수 제어
+            const root = document.documentElement;
+
+            if (theme === 'purple') {
+                document.body.style.backgroundColor = '#f3f0ff';
+                applyColorToElements('#a29bfe');
+            } else if (theme === 'dark') {
+                document.body.classList.add('theme-dark');
+                applyColorToElements('#636e72');
+            } else {
+                // 기본(블루)
+                document.body.style.backgroundColor = '#f0f2f5';
+                applyColorToElements('#6e8efb');
+            }
+
+            localStorage.setItem('freeTalkTheme', theme); // 테마 저장
+            alert(theme.toUpperCase() + " 테마가 적용되었습니다.");
+        }
+
+        function applyColorToElements(color) {
+            // 방 목록 아이콘, 전송 버튼 등 주요 색상 일괄 변경
+            const elements = document.querySelectorAll('.room-item, #form button[type="submit"]');
+            elements.forEach(el => el.style.backgroundColor = color);
+        }
+
+        // 페이지 로드 시 저장된 테마 불러오기
+        window.onload = () => {
+            const savedTheme = localStorage.getItem('freeTalkTheme');
+            if (savedTheme) changeTheme(savedTheme);
+        };
 
         // 메시지 전송
         document.getElementById('form').addEventListener('submit', (e) => {
