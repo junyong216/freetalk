@@ -55,7 +55,7 @@ app.post('/upload', upload.single('image'), (req, res) => {
 
     // DB 저장 (기존 chat message 로직과 유사)
     db.run("INSERT INTO messages (room, name, text, type, read_count) VALUES (?, ?, ?, 'image', 0)",
-        [room, name, imageUrl], function(err) {
+        [room, name, imageUrl], function (err) {
             if (!err) {
                 // 방에 있는 사람들에게 실시간 전송
                 io.to(room).emit('chat message', {
@@ -161,6 +161,7 @@ io.on('connection', (socket) => {
         const timeStr = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
         const roomName = data.room;
         const allSocketsInRoom = io.sockets.adapter.rooms.get(roomName);
+        const MESSAGE_LIMIT = 1000;
 
         let activeUsers = 0;
         if (allSocketsInRoom) {
@@ -180,6 +181,18 @@ io.on('connection', (socket) => {
         db.run("INSERT INTO messages (room, name, text, type, read_count, likes) VALUES (?, ?, ?, ?, ?, 0)",
             [data.room, data.name, data.text, data.type || 'text', initialReadCount], function (err) {
                 if (!err) {
+                    const purgeQuery = `
+                    DELETE FROM messages 
+                    WHERE id IN (
+                    SELECT id FROM messages 
+                    ORDER BY created_at DESC 
+                    LIMIT -1 OFFSET ?
+                    )
+                `;
+                    db.run(purgeQuery, [MESSAGE_LIMIT], (err) => {
+                        if (err) console.error("Purge Error:", err);
+                    });
+
                     io.to(data.room).emit('chat message', {
                         id: this.lastID,
                         name: data.name,
