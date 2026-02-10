@@ -14,6 +14,7 @@ const db = new sqlite3.Database('./chat_v2.db');
 const allRooms = new Set(["자유 대화방", "정보 공유방", "비밀 대화방"]);
 
 const roomNotices = {};
+const roomPasswords = {};
 
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS messages (
@@ -58,7 +59,22 @@ function sendUserList(room) {
 io.on('connection', (socket) => {
     sendRoomCounts();
 
+    socket.on('create room', (data) => {
+        allRooms.add(data.room); // 새로운 방 이름 추가
+        if (data.password) {
+            roomPasswords[data.room] = data.password; // 비밀번호 설정
+        }
+        sendRoomCounts();
+    });
+
     socket.on('join room', (data) => {
+        if (roomPasswords[data.room]) {
+            if (roomPasswords[data.room] !== data.password) {
+                // 비밀번호가 틀리면 클라이언트에 에러를 보내고 함수 종료
+                return socket.emit('join error', { message: '비밀번호가 일치하지 않습니다.' });
+            }
+        }
+        
         const isAlreadyIn = socket.rooms.has(data.room);
 
         socket.join(data.room);

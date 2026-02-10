@@ -257,11 +257,15 @@
         <div class="room-container">
             <h2 style="color: #6e8efb;">💬 프리톡</h2>
             <div id="room-list"></div>
-            <div style="display:flex; gap:5px; margin-top:15px;">
-                <input id="new-room-input" placeholder="방 이름..."
-                    style="flex:1; padding:10px; border-radius:10px; border:1px solid #ddd;" />
-                <button onclick="createNewRoom()"
-                    style="background:#a777e3; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer;">생성</button>
+            <div style="display:flex; flex-direction:column; gap:5px; margin-top:15px;">
+                <div style="display:flex; gap:5px;">
+                    <input id="new-room-input" placeholder="방 이름..."
+                        style="flex:1; padding:10px; border-radius:10px; border:1px solid #ddd;" />
+                    <input type="password" id="new-room-pw" placeholder="비밀번호(선택)"
+                        style="width:100px; padding:10px; border-radius:10px; border:1px solid #ddd;" />
+                    <button onclick="createNewRoom()"
+                        style="background:#a777e3; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer;">생성</button>
+                </div>
             </div>
         </div>
         <div id="footer-bar" style="margin-top:20px; font-size:0.8rem; color:#888;">
@@ -559,15 +563,30 @@
         });
 
         // --- 기능 함수들 ---
-        function enterRoom(roomName) {
+        function enterRoom(roomName, providedPw = null) {
             if (!userName) { setNickname(); if (!userName) return; }
+
+            // 생성 시 입력한 비번이 없으면 물어보기
+            let password = providedPw;
+            if (password === null) {
+                password = prompt("비밀번호가 있는 방이라면 입력해주세요. (없으면 바로 확인)");
+            }
+
             currentRoom = roomName;
             socket.emit('update active room', roomName);
             document.getElementById('list-area').style.display = 'none';
             document.getElementById('chat-area').style.display = 'flex';
             document.getElementById('room-title').textContent = roomName;
-            socket.emit('join room', { room: roomName, name: userName });
+
+            // 서버로 비밀번호와 함께 입장 요청
+            socket.emit('join room', { room: roomName, name: userName, password: password });
         }
+
+        // [추가] 비밀번호 틀렸을 때 처리 (스크립트 아무 곳에나 추가)
+        socket.on('join error', (data) => {
+            alert(data.message);
+            goBack(); // 다시 로비로 보냄
+        });
 
         function goBack() {
             socket.emit('update active room', null);
@@ -596,7 +615,14 @@
 
         function createNewRoom() {
             const val = document.getElementById('new-room-input').value;
-            if (val) { enterRoom(val); document.getElementById('new-room-input').value = ''; }
+            const pw = document.getElementById('new-room-pw').value; // 비번 가져오기
+            if (val) {
+                // 서버에 방 생성 알림 (비밀번호 포함)
+                socket.emit('create room', { room: val, password: pw });
+                enterRoom(val, pw); // 입장 시에도 비번 전달
+                document.getElementById('new-room-input').value = '';
+                document.getElementById('new-room-pw').value = '';
+            }
         }
 
         // 설정창 열기/닫기
