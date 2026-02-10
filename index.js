@@ -2,6 +2,9 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const sqlite3 = require('sqlite3').verbose();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -9,6 +12,19 @@ const io = new Server(server, {
     maxHttpBufferSize: 5e7
 });
 app.use(express.static(__dirname));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+if (!fs.existsSync('./uploads')) {
+    fs.mkdirSync('./uploads');
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => { cb(null, 'uploads/'); },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage: storage });
 
 const db = new sqlite3.Database('./chat_v2.db');
 const allRooms = new Set(["자유 대화방", "정보 공유방", "비밀 대화방"]);
@@ -31,6 +47,29 @@ db.serialize(() => {
 });
 
 app.get('/', (req, res) => { res.sendFile(__dirname + '/index.html'); });
+app.post('/upload', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).send('파일이 없습니다.');
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    const { room, name } = req.body; // 클라이언트에서 보낸 데이터
+
+    // DB 저장 (기존 chat message 로직과 유사)
+    db.run("INSERT INTO messages (room, name, text, type, read_count) VALUES (?, ?, ?, 'image', 0)",
+        [room, name, imageUrl], function(err) {
+            if (!err) {
+                // 방에 있는 사람들에게 실시간 전송
+                io.to(room).emit('chat message', {
+                    id: this.lastID,
+                    name: name,
+                    text: imageUrl,
+                    type: 'image',
+                    room: room,
+                    time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false })
+                });
+                res.json({ success: true, url: imageUrl });
+            }
+        });
+});
 
 function sendRoomCounts() {
     const roomCounts = {};
@@ -74,7 +113,7 @@ io.on('connection', (socket) => {
                 return socket.emit('join error', { message: '비밀번호가 일치하지 않습니다.' });
             }
         }
-        
+
         const isAlreadyIn = socket.rooms.has(data.room);
 
         socket.join(data.room);
