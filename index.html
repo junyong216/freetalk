@@ -58,6 +58,31 @@
             font-weight: bold;
         }
 
+        /* 1. 입력창 부모 컨테이너: 너비를 100%로 고정 */
+        .room-container div[style*="display: flex"] {
+            width: 100% !important;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        /* 2. 입력창 스타일: 박스 모델을 정확히 계산하도록 함 */
+        #roomInput,
+        #pwInput {
+            width: 100%;
+            min-width: 0;
+            /* flex 박스 안에서 삐져나가는 걸 막아주는 핵심 속성! */
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        /* 3. 새로운 방 만들기 버튼: 간격 확보 */
+        .room-container button {
+            margin-top: 5px;
+            width: 100%;
+        }
+
         /* 채팅 영역 */
         #chat-area {
             display: none;
@@ -265,14 +290,11 @@
 
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
 
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; gap: 5px;">
-                    <input id="roomInput" placeholder="방 이름..."
-                        style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                    <input id="pwInput" type="password" placeholder="비밀번호(선택)"
-                        style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                </div>
-                <button onclick="createRoom()"
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                <div style="display: flex; gap: 8px; width: 100%;"> <input id="roomInput" placeholder="방 이름..."
+                        style="flex: 1.5; min-width: 0;"> <input id="pwInput" type="password" placeholder="비번(선택)"
+                        style="flex: 1; min-width: 0;"> </div>
+                <button onclick="createNewRoom()"
                     style="width: 100%; padding: 12px; background: #6e8efb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                     새로운 방 만들기
                 </button>
