@@ -517,7 +517,10 @@
                     const password = data.hasPassword && data.hasPassword[roomName]
                         ? prompt('비밀번호를 입력하세요')
                         : null;
-                    joinRoom(roomName, password);
+
+                    // 이 함수 이름이 joinRoom인가요, enterRoom인가요? 
+                    // 실제 아래쪽에 정의된 입장용 함수 이름과 똑같이 맞춰주세요.
+                    enterRoom(roomName, password);
                 };
 
                 roomListDiv.appendChild(roomItem);
@@ -661,18 +664,23 @@
             }
         }
 
+        // 이 함수가 자바스크립트에 있어야 버튼이 작동합니다!
         function createNewRoom() {
-            // HTML에 작성된 ID인 'roomInput'과 'pwInput'으로 수정해야 합니다.
             const val = document.getElementById('roomInput').value;
             const pw = document.getElementById('pwInput').value;
 
             if (val) {
+                // 서버에 방 생성 요청 (서버쪽 이벤트명이 'create room'인지 확인 필요)
                 socket.emit('create room', { room: val, password: pw });
+
+                // 방금 만드신 enterRoom 함수를 여기서 실행!
                 enterRoom(val, pw);
 
+                // 입력창 비우기
                 document.getElementById('roomInput').value = '';
                 document.getElementById('pwInput').value = '';
-                console.log(`${val} 방 생성 요청 완료`);
+            } else {
+                alert("방 이름을 입력해주세요!");
             }
         }
 
