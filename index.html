@@ -16,20 +16,23 @@
             font-family: 'Pretendard', sans-serif;
             margin: 0;
             background-color: #f0f2f5;
-            height: 100vh;
+            /* height: 100vh;  <- 삭제 혹은 min-height로 변경 */
+            min-height: 100vh;
             width: 100vw;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            /* overflow: hidden; <- 삭제: 내용이 길어지면 스크롤이 생겨야 버튼이 보입니다. */
         }
 
-        /* 메인 리스트 영역 */
         #list-area {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
+            /* height 대신 min-height 사용 */
+            padding: 20px 0;
+            /* 상하 여백 추가 */
         }
 
         .room-container {
@@ -40,6 +43,7 @@
             width: 380px;
             max-width: 95%;
             text-align: center;
+            /* 버튼이 잘리지 않도록 높이를 고정하지 않습니다. */
         }
 
         .room-item {
@@ -255,22 +259,28 @@
 
     <div id="list-area">
         <div class="room-container">
-            <h2 style="color: #6e8efb;">💬 프리톡</h2>
+            <h2 style="color: #6e8efb;"><i class="fas fa-comments"></i> 프리톡</h2>
+
             <div id="room-list"></div>
-            <div style="display:flex; flex-direction:column; gap:5px; margin-top:15px;">
-                <div style="display:flex; gap:5px;">
-                    <input id="new-room-input" placeholder="방 이름..."
-                        style="flex:1; padding:10px; border-radius:10px; border:1px solid #ddd;" />
-                    <input type="password" id="new-room-pw" placeholder="비밀번호(선택)"
-                        style="width:100px; padding:10px; border-radius:10px; border:1px solid #ddd;" />
-                    <button onclick="createNewRoom()"
-                        style="background:#a777e3; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer;">생성</button>
+
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 5px;">
+                    <input id="roomInput" placeholder="방 이름..."
+                        style="flex: 2; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                    <input id="pwInput" type="password" placeholder="비밀번호(선택)"
+                        style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
                 </div>
+                <button onclick="createRoom()"
+                    style="width: 100%; padding: 12px; background: #6e8efb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                    새로운 방 만들기
+                </button>
             </div>
         </div>
-        <div id="footer-bar" style="margin-top:20px; font-size:0.8rem; color:#888;">
-            문의 <strong>제이투코어</strong> | <a href="mailto:jjyong3872@naver.com"
-                style="text-decoration:none; color:#0984e3;">📩 jjyong3872@naver.com</a>
+
+        <div style="margin-top: 20px; color: #888; font-size: 0.9rem;">
+            문의 제이투코어 | 📧 jjyong3872@naver.com
         </div>
     </div>
 
@@ -465,15 +475,28 @@
         });
 
         socket.on('room counts', (data) => {
-            const list = document.getElementById('room-list');
-            list.innerHTML = '';
-            for (const room in data.roomCounts) {
-                const item = document.createElement('div');
-                item.className = 'room-item';
-                item.onclick = () => enterRoom(room);
-                item.innerHTML = `<span>${room}</span><span>${data.roomCounts[room]}명</span>`;
-                list.appendChild(item);
-            }
+            const roomListDiv = document.getElementById('room-list');
+            roomListDiv.innerHTML = ''; // 기존 목록을 비웁니다.
+
+            Object.keys(data.roomCounts).forEach(roomName => {
+                const count = data.roomCounts[roomName];
+
+                const roomItem = document.createElement('div');
+                roomItem.className = 'room-item';
+                roomItem.innerHTML = `
+            <span>${roomName}</span>
+            <span>${count}명</span>
+        `;
+
+                roomItem.onclick = () => {
+                    const password = data.hasPassword && data.hasPassword[roomName]
+                        ? prompt('비밀번호를 입력하세요')
+                        : null;
+                    joinRoom(roomName, password);
+                };
+
+                roomListDiv.appendChild(roomItem);
+            });
         });
 
         socket.on('display typing', (data) => {
@@ -614,14 +637,17 @@
         }
 
         function createNewRoom() {
-            const val = document.getElementById('new-room-input').value;
-            const pw = document.getElementById('new-room-pw').value; // 비번 가져오기
+            // HTML에 작성된 ID인 'roomInput'과 'pwInput'으로 수정해야 합니다.
+            const val = document.getElementById('roomInput').value;
+            const pw = document.getElementById('pwInput').value;
+
             if (val) {
-                // 서버에 방 생성 알림 (비밀번호 포함)
                 socket.emit('create room', { room: val, password: pw });
-                enterRoom(val, pw); // 입장 시에도 비번 전달
-                document.getElementById('new-room-input').value = '';
-                document.getElementById('new-room-pw').value = '';
+                enterRoom(val, pw);
+
+                document.getElementById('roomInput').value = '';
+                document.getElementById('pwInput').value = '';
+                console.log(`${val} 방 생성 요청 완료`);
             }
         }
 
